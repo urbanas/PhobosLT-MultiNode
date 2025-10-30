@@ -198,7 +198,7 @@ footer {
   color: white;
 }
 
-@media (max-width: 150px) {
+@media (max-width: 768px) {
   nav {
       flex-direction: column;
   }
@@ -237,6 +237,245 @@ footer {
 
   table th,
   table td {
-      padding: 8px;
+      padding: 6px;
   }
+
+  /* Stack node config table vertically on mobile */
+  .node-config-table thead th {
+      display: block;
+      width: 100%;
+      font-size: 16px;
+  }
+
+  .node-config-table tbody tr {
+      display: block;
+      margin-bottom: 16px;
+  }
+
+  .node-config-table tbody td {
+      display: block;
+      width: 100% !important;
+      max-width: 100%;
+      margin-bottom: 16px;
+      border-bottom: 2px solid var(--primary-color);
+  }
+
+  .node-config-table tbody td:last-child {
+      margin-bottom: 0;
+  }
+
+  /* Stack race layout table vertically on mobile */
+  .race-layout-table thead th.pilot-header {
+      display: block;
+      width: 100%;
+      margin-bottom: 8px;
+  }
+
+  .race-layout-table tbody tr {
+      display: block;
+  }
+
+  .race-layout-table tbody td.lap-table-cell {
+      display: block;
+      width: 100% !important;
+      margin-bottom: 16px;
+  }
+
+  /* Adjust race header for mobile */
+  .race-header #timer {
+      font-size: 24px;
+  }
+
+  .racebuttons {
+      flex-direction: column;
+      gap: 8px;
+  }
+
+  .racebuttons button {
+      width: 100%;
+  }
+
+  /* Adjust calibration sections for mobile */
+  .calib-section {
+      padding: 12px;
+  }
+
+  #rssiChart,
+  #rssiChart2 {
+      height: 200px;
+  }
+}
+
+/* Calibration Section Styling */
+.calib-section {
+  background-color: #f8f9fa;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+.calib-section h3 {
+  margin-bottom: 12px;
+  color: var(--primary-color);
+  border-bottom: 2px solid var(--primary-color);
+  padding-bottom: 8px;
+}
+
+.chart-container {
+  margin-bottom: 16px;
+}
+
+/* Calibration Canvas Styling */
+#rssiChart,
+#rssiChart2 {
+  width: 100%;
+  height: 250px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: #2a2a2a;
+  display: block;
+}
+
+/* Node Configuration Table */
+.node-config-table {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto 20px auto;
+  border-collapse: collapse;
+}
+
+.node-config-table thead th {
+  background-color: var(--primary-color);
+  color: white;
+  padding: 12px;
+  text-align: center;
+  font-size: 18px;
+  font-weight: bold;
+  width: 50%;
+}
+
+.node-config-table tbody td {
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  vertical-align: top;
+  width: 50%;
+  max-width: 450px;
+}
+
+.node-config-table label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+.node-config-table select,
+.node-config-table input[type="text"] {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.node-config-table .freq-display {
+  display: block;
+  font-weight: bold;
+  font-size: 16px;
+  color: var(--primary-color);
+  padding: 8px;
+  text-align: center;
+  background-color: #f0f8ff;
+  border-radius: 4px;
+}
+
+/* Race Tab Layout */
+.race-header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.race-header #timer {
+  font-size: 32px;
+  font-weight: bold;
+  display: block;
+  margin-bottom: 12px;
+  color: var(--primary-color);
+}
+
+.race-layout-table {
+  width: 100%;
+  max-width: 1200px;
+  margin: 16px auto 0 auto;
+  border-collapse: collapse;
+}
+
+.race-layout-table thead th.pilot-header {
+  background-color: var(--primary-color);
+  color: white;
+  padding: 16px;
+  text-align: center;
+  font-size: 18px;
+  font-weight: bold;
+  border: 2px solid var(--border-color);
+}
+
+.pilot-header span {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 20px;
+}
+
+.node-controls {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.node-controls button {
+  flex: 1;
+  max-width: 100px;
+  margin: 0;
+  padding: 6px 12px;
+  font-size: 14px;
+}
+
+.race-layout-table tbody td.lap-table-cell {
+  padding: 12px;
+  border: 2px solid var(--border-color);
+  vertical-align: top;
+  width: 50%;
+}
+
+.lap-times-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0;
+}
+
+.lap-times-table th {
+  background-color: var(--secondary-color);
+  color: white;
+  padding: 8px;
+  border: 1px solid var(--border-color);
+  text-align: center;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.lap-times-table td {
+  padding: 8px;
+  border: 1px solid var(--border-color);
+  text-align: center;
+  font-size: 14px;
+}
+
+.lap-times-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.lap-times-table tr:hover {
+  background-color: #e8f4f8;
 }

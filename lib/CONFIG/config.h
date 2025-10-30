@@ -29,6 +29,10 @@
 #define PIN_RX5808_DATA 6     //CH1
 #define PIN_RX5808_SELECT 7   //CH2
 #define PIN_RX5808_CLOCK 4    //CH3
+#define PIN_RX5808_2_RSSI 2
+#define PIN_RX5808_2_DATA 8
+#define PIN_RX5808_2_SELECT 9
+#define PIN_RX5808_2_CLOCK 10
 #define PIN_BUZZER 5
 #define BUZZER_INVERTED false
 
@@ -43,6 +47,10 @@
 #define PIN_RX5808_DATA 11     //CH1
 #define PIN_RX5808_SELECT 10   //CH2
 #define PIN_RX5808_CLOCK 12    //CH3
+#define PIN_RX5808_2_RSSI 4
+#define PIN_RX5808_2_DATA 5
+#define PIN_RX5808_2_SELECT 6
+#define PIN_RX5808_2_CLOCK 7
 #define PIN_BUZZER 3
 #define BUZZER_INVERTED false
 
@@ -57,6 +65,10 @@
 #define PIN_RX5808_DATA 19   //CH1
 #define PIN_RX5808_SELECT 22 //CH2
 #define PIN_RX5808_CLOCK 23  //CH3
+#define PIN_RX5808_2_RSSI 32
+#define PIN_RX5808_2_DATA 25
+#define PIN_RX5808_2_SELECT 26
+#define PIN_RX5808_2_CLOCK 14
 #define PIN_BUZZER 27
 #define BUZZER_INVERTED false
 
@@ -73,12 +85,17 @@ typedef struct {
     uint32_t version;
     uint16_t frequency;
     uint8_t minLap;
+    uint8_t raceStartDelay;
     uint8_t alarm;
     uint8_t announcerType;
     uint8_t announcerRate;
     uint8_t enterRssi;
     uint8_t exitRssi;
     char pilotName[21];
+    uint16_t frequency2;
+    uint8_t enterRssi2;
+    uint8_t exitRssi2;
+    char pilotName2[21];
     char ssid[33];
     char password[33];
 } laptimer_config_t;
@@ -95,10 +112,14 @@ class Config {
 
     // getters and setters
     uint16_t getFrequency();
+    uint16_t getFrequency2();
     uint32_t getMinLapMs();
+    uint32_t getRaceStartDelayMs();
     uint8_t getAlarmThreshold();
     uint8_t getEnterRssi();
     uint8_t getExitRssi();
+    uint8_t getEnterRssi2();
+    uint8_t getExitRssi2();
     char* getSsid();
     char* getPassword();
 

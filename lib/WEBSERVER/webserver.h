@@ -1,3 +1,4 @@
+#include <WiFi.h>
 #include <ESPAsyncWebServer.h>
 
 #include "battery.h"
@@ -9,16 +10,17 @@
 
 class Webserver {
    public:
-    void init(Config *config, LapTimer *lapTimer, BatteryMonitor *batMonitor, Buzzer *buzzer, Led *l);
+    void init(Config *config, LapTimer *lapTimer1, LapTimer *lapTimer2, BatteryMonitor *batMonitor, Buzzer *buzzer, Led *l);
     void handleWebUpdate(uint32_t currentTimeMs);
 
    private:
     void startServices();
-    void sendRssiEvent(uint8_t rssi);
-    void sendLaptimeEvent(uint32_t lapTime);
+    void sendRssiEvent(uint8_t rssi, uint8_t node);
+    void sendLaptimeEvent(uint32_t lapTime, uint8_t node);
 
     Config *conf;
-    LapTimer *timer;
+    LapTimer *timer1;
+    LapTimer *timer2;
     BatteryMonitor *monitor;
     Buzzer *buz;
     Led *led;

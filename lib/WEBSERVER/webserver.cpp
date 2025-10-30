@@ -21,12 +21,13 @@ static const char *wifi_ap_password = "phoboslt";
 static const char *wifi_ap_address = "20.0.0.1";
 String wifi_ap_ssid;
 
-void Webserver::init(Config *config, LapTimer *lapTimer, BatteryMonitor *batMonitor, Buzzer *buzzer, Led *l) {
+void Webserver::init(Config *config, LapTimer *lapTimer1, LapTimer *lapTimer2, BatteryMonitor *batMonitor, Buzzer *buzzer, Led *l) {
 
     ipAddress.fromString(wifi_ap_address);
 
     conf = config;
-    timer = lapTimer;
+    timer1 = lapTimer1;
+    timer2 = lapTimer2;
     monitor = batMonitor;
     buz = buzzer;
     led = l;
@@ -49,27 +50,31 @@ void Webserver::init(Config *config, LapTimer *lapTimer, BatteryMonitor *batMoni
     lastStatus = WL_DISCONNECTED;
 }
 
-void Webserver::sendRssiEvent(uint8_t rssi) {
+void Webserver::sendRssiEvent(uint8_t rssi, uint8_t node) {
     if (!servicesStarted) return;
-    char buf[16];
-    snprintf(buf, sizeof(buf), "%u", rssi);
+    char buf[32];
+    snprintf(buf, sizeof(buf), "{\"node\":%u,\"rssi\":%u}", node, rssi);
     events.send(buf, "rssi");
 }
 
-void Webserver::sendLaptimeEvent(uint32_t lapTime) {
+void Webserver::sendLaptimeEvent(uint32_t lapTime, uint8_t node) {
     if (!servicesStarted) return;
-    char buf[16];
-    snprintf(buf, sizeof(buf), "%u", lapTime);
+    char buf[32];
+    snprintf(buf, sizeof(buf), "{\"node\":%u,\"time\":%u}", node, lapTime);
     events.send(buf, "lap");
 }
 
 void Webserver::handleWebUpdate(uint32_t currentTimeMs) {
-    if (timer->isLapAvailable()) {
-        sendLaptimeEvent(timer->getLapTime());
+    if (timer1->isLapAvailable()) {
+        sendLaptimeEvent(timer1->getLapTime(), 1);
+    }
+    if (timer2->isLapAvailable()) {
+        sendLaptimeEvent(timer2->getLapTime(), 2);
     }
 
     if (sendRssi && ((currentTimeMs - rssiSentMs) > WEB_RSSI_SEND_TIMEOUT_MS)) {
-        sendRssiEvent(timer->getRssi());
+        sendRssiEvent(timer1->getRssi(), 1);
+        sendRssiEvent(timer2->getRssi(), 2);
         rssiSentMs = currentTimeMs;
     }
 
@@ -284,12 +289,22 @@ Battery Voltage:\t%0.1fv";
     });
 
     server.on("/timer/start", HTTP_POST, [this](AsyncWebServerRequest *request) {
-        timer->start();
+        uint8_t node = 0;
+        if (request->hasParam("node", true)) {
+            node = request->getParam("node", true)->value().toInt();
+        }
+        if (node == 0 || node == 1) timer1->start();
+        if (node == 0 || node == 2) timer2->start();
         request->send(200, "application/json", "{\"status\": \"OK\"}");
     });
 
     server.on("/timer/stop", HTTP_POST, [this](AsyncWebServerRequest *request) {
-        timer->stop();
+        uint8_t node = 0;
+        if (request->hasParam("node", true)) {
+            node = request->getParam("node", true)->value().toInt();
+        }
+        if (node == 0 || node == 1) timer1->stop();
+        if (node == 0 || node == 2) timer2->stop();
         request->send(200, "application/json", "{\"status\": \"OK\"}");
     });
 

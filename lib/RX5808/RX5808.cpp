@@ -13,7 +13,7 @@ RX5808::RX5808(uint8_t _rssiInputPin, uint8_t _rx5808DataPin, uint8_t _rx5808Sel
 }
 
 void RX5808::init() {
-    pinMode(rssiInputPin, INPUT);
+    pinMode(rssiInputPin, INPUT_PULLDOWN);  // Pull-down prevents floating when no RX5808 connected
     pinMode(rx5808DataPin, OUTPUT);
     pinMode(rx5808SelPin, OUTPUT);
     pinMode(rx5808ClkPin, OUTPUT);

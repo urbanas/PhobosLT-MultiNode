@@ -3,12 +3,14 @@
 #include "webserver.h"
 #include <ElegantOTA.h>
 
-static RX5808 rx(PIN_RX5808_RSSI, PIN_RX5808_DATA, PIN_RX5808_SELECT, PIN_RX5808_CLOCK);
+static RX5808 rx1(PIN_RX5808_RSSI, PIN_RX5808_DATA, PIN_RX5808_SELECT, PIN_RX5808_CLOCK);
+static RX5808 rx2(PIN_RX5808_2_RSSI, PIN_RX5808_2_DATA, PIN_RX5808_2_SELECT, PIN_RX5808_2_CLOCK);
 static Config config;
 static Webserver ws;
 static Buzzer buzzer;
 static Led led;
-static LapTimer timer;
+static LapTimer timer1;
+static LapTimer timer2;
 static BatteryMonitor monitor;
 
 static TaskHandle_t xTimerTask = NULL;
@@ -20,7 +22,8 @@ static void parallelTask(void *pvArgs) {
         led.handleLed(currentTimeMs);
         ws.handleWebUpdate(currentTimeMs);
         config.handleEeprom(currentTimeMs);
-        rx.handleFrequencyChange(currentTimeMs, config.getFrequency());
+        rx1.handleFrequencyChange(currentTimeMs, config.getFrequency());
+        rx2.handleFrequencyChange(currentTimeMs, config.getFrequency2());
         monitor.checkBatteryState(currentTimeMs, config.getAlarmThreshold());
         buzzer.handleBuzzer(currentTimeMs);
         led.handleLed(currentTimeMs);
@@ -35,12 +38,14 @@ static void initParallelTask() {
 void setup() {
     DEBUG_INIT;
     config.init();
-    rx.init();
+    rx1.init();
+    rx2.init();
     buzzer.init(PIN_BUZZER, BUZZER_INVERTED);
     led.init(PIN_LED, false);
-    timer.init(&config, &rx, &buzzer, &led);
+    timer1.init(&config, &rx1, &buzzer, &led);
+    timer2.init(&config, &rx2, &buzzer, &led);
     monitor.init(PIN_VBAT, VBAT_SCALE, VBAT_ADD, &buzzer, &led);
-    ws.init(&config, &timer, &monitor, &buzzer, &led);
+    ws.init(&config, &timer1, &timer2, &monitor, &buzzer, &led);
     led.on(400);
     buzzer.beep(200);
     initParallelTask();
@@ -48,6 +53,7 @@ void setup() {
 
 void loop() {
     uint32_t currentTimeMs = millis();
-    timer.handleLapTimerUpdate(currentTimeMs);
+    timer1.handleLapTimerUpdate(currentTimeMs);
+    timer2.handleLapTimerUpdate(currentTimeMs);
     ElegantOTA.loop();
 }

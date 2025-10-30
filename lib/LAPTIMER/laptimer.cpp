@@ -32,6 +32,10 @@ void LapTimer::stop() {
     lapCountWraparound = false;
     lapCount = 0;
     rssiCount = 0;
+    raceStartTimeMs = 0;
+    startTimeMs = 0;
+    rssiPeak = 0;
+    rssiPeakTimeMs = 0;
     memset(lapTimes, 0, sizeof(lapTimes));
     buz->beep(500);
     led->on(500);
@@ -96,13 +100,14 @@ void LapTimer::startLap() {
 }
 
 void LapTimer::finishLap() {
-    lapTimes[lapCount] = rssiPeakTimeMs - startTimeMs;
     if (lapCount == 0 && lapCountWraparound == false)
     {
+        // First lap (hole shot) - measure from race start
         lapTimes[0] = rssiPeakTimeMs - raceStartTimeMs;
     }
     else
     {
+        // Subsequent laps - measure from last peak
         lapTimes[lapCount] = rssiPeakTimeMs - startTimeMs;
     }
     DEBUG("Lap finished, lap time = %u\n", lapTimes[lapCount]);

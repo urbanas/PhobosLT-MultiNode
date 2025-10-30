@@ -47,34 +47,44 @@ void Config::write(void) {
 }
 
 void Config::toJson(AsyncResponseStream& destination) {
-    // Use https://arduinojson.org/v6/assistant to estimate memory
-    DynamicJsonDocument config(256);
+    // Use https://arduinojson.org/v7/assistant to estimate memory
+    JsonDocument config;
     config["freq"] = conf.frequency;
     config["minLap"] = conf.minLap;
+    config["raceStartDelay"] = conf.raceStartDelay;
     config["alarm"] = conf.alarm;
     config["anType"] = conf.announcerType;
     config["anRate"] = conf.announcerRate;
     config["enterRssi"] = conf.enterRssi;
     config["exitRssi"] = conf.exitRssi;
     config["name"] = conf.pilotName;
+    config["freq2"] = conf.frequency2;
+    config["enterRssi2"] = conf.enterRssi2;
+    config["exitRssi2"] = conf.exitRssi2;
+    config["name2"] = conf.pilotName2;
     config["ssid"] = conf.ssid;
     config["pwd"] = conf.password;
     serializeJson(config, destination);
 }
 
 void Config::toJsonString(char* buf) {
-    DynamicJsonDocument config(256);
+    JsonDocument config;
     config["freq"] = conf.frequency;
     config["minLap"] = conf.minLap;
+    config["raceStartDelay"] = conf.raceStartDelay;
     config["alarm"] = conf.alarm;
     config["anType"] = conf.announcerType;
     config["anRate"] = conf.announcerRate;
     config["enterRssi"] = conf.enterRssi;
     config["exitRssi"] = conf.exitRssi;
     config["name"] = conf.pilotName;
+    config["freq2"] = conf.frequency2;
+    config["enterRssi2"] = conf.enterRssi2;
+    config["exitRssi2"] = conf.exitRssi2;
+    config["name2"] = conf.pilotName2;
     config["ssid"] = conf.ssid;
     config["pwd"] = conf.password;
-    serializeJsonPretty(config, buf, 256);
+    serializeJsonPretty(config, buf, 512);
 }
 
 void Config::fromJson(JsonObject source) {
@@ -84,6 +94,10 @@ void Config::fromJson(JsonObject source) {
     }
     if (source["minLap"] != conf.minLap) {
         conf.minLap = source["minLap"];
+        modified = true;
+    }
+    if (source["raceStartDelay"] != conf.raceStartDelay) {
+        conf.raceStartDelay = source["raceStartDelay"];
         modified = true;
     }
     if (source["alarm"] != conf.alarm) {
@@ -110,6 +124,22 @@ void Config::fromJson(JsonObject source) {
         strlcpy(conf.pilotName, source["name"] | "", sizeof(conf.pilotName));
         modified = true;
     }
+    if (source["freq2"] != conf.frequency2) {
+        conf.frequency2 = source["freq2"];
+        modified = true;
+    }
+    if (source["enterRssi2"] != conf.enterRssi2) {
+        conf.enterRssi2 = source["enterRssi2"];
+        modified = true;
+    }
+    if (source["exitRssi2"] != conf.exitRssi2) {
+        conf.exitRssi2 = source["exitRssi2"];
+        modified = true;
+    }
+    if (source["name2"] != conf.pilotName2) {
+        strlcpy(conf.pilotName2, source["name2"] | "", sizeof(conf.pilotName2));
+        modified = true;
+    }
     if (source["ssid"] != conf.ssid) {
         strlcpy(conf.ssid, source["ssid"] | "", sizeof(conf.ssid));
         modified = true;
@@ -124,8 +154,16 @@ uint16_t Config::getFrequency() {
     return conf.frequency;
 }
 
+uint16_t Config::getFrequency2() {
+    return conf.frequency2;
+}
+
 uint32_t Config::getMinLapMs() {
     return conf.minLap * 100;
+}
+
+uint32_t Config::getRaceStartDelayMs() {
+    return conf.raceStartDelay * 100;
 }
 
 uint8_t Config::getAlarmThreshold() {
@@ -138,6 +176,14 @@ uint8_t Config::getEnterRssi() {
 
 uint8_t Config::getExitRssi() {
     return conf.exitRssi;
+}
+
+uint8_t Config::getEnterRssi2() {
+    return conf.enterRssi2;
+}
+
+uint8_t Config::getExitRssi2() {
+    return conf.exitRssi2;
 }
 
 char* Config::getSsid() {
@@ -154,15 +200,20 @@ void Config::setDefaults(void) {
     memset(&conf, 0, sizeof(conf));
     conf.version = CONFIG_VERSION | CONFIG_MAGIC;
     conf.frequency = 1111;
-    conf.minLap = 100;
+    conf.minLap = 50;  // 5 seconds (value * 100ms)
+    conf.raceStartDelay = 50;  // 5 seconds (value * 100ms)
     conf.alarm = 36;
     conf.announcerType = 2;
     conf.announcerRate = 10;
     conf.enterRssi = 120;
     conf.exitRssi = 100;
+    conf.frequency2 = 1111;
+    conf.enterRssi2 = 120;
+    conf.exitRssi2 = 100;
     strlcpy(conf.ssid, "", sizeof(conf.ssid));
     strlcpy(conf.password, "", sizeof(conf.password));
     strlcpy(conf.pilotName, "", sizeof(conf.pilotName));
+    strlcpy(conf.pilotName2, "", sizeof(conf.pilotName2));
     modified = true;
     write();
 }
