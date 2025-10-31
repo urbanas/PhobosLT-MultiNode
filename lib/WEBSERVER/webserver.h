@@ -8,6 +8,11 @@
 #define WIFI_RECONNECT_TIMEOUT_MS 500
 #define WEB_RSSI_SEND_TIMEOUT_MS 200
 
+// Forward declarations for webserver internal types
+class AsyncWebServer;
+class AsyncEventSource;
+class DNSServer;
+
 class Webserver {
    public:
     void init(Config *config, LapTimer *lapTimer1, LapTimer *lapTimer2, BatteryMonitor *batMonitor, Buzzer *buzzer, Led *l);
@@ -25,6 +30,7 @@ class Webserver {
     Buzzer *buz;
     Led *led;
 
+    // WiFi state
     wifi_mode_t wifiMode = WIFI_OFF;
     wl_status_t lastStatus = WL_IDLE_STATUS;
     volatile wifi_mode_t changeMode = WIFI_OFF;
@@ -32,6 +38,15 @@ class Webserver {
     bool servicesStarted = false;
     bool wifiConnected = false;
 
+    // RSSI streaming state
     bool sendRssi = false;
     uint32_t rssiSentMs = 0;
+    
+    // Network configuration (moved from statics)
+    AsyncWebServer *server = nullptr;
+    AsyncEventSource *events = nullptr;
+    DNSServer *dnsServer = nullptr;
+    IPAddress ipAddress;
+    IPAddress netMsk;
+    String wifiApSsid;
 };

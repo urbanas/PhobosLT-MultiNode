@@ -1,228 +1,281 @@
-// Node 1 elements
-const bandSelect = document.getElementById("bandSelect");
-const channelSelect = document.getElementById("channelSelect");
-const freqOutput = document.getElementById("freqOutput");
-const enterRssiInput = document.getElementById("enter");
-const exitRssiInput = document.getElementById("exit");
-const enterRssiSpan = document.getElementById("enterSpan");
-const exitRssiSpan = document.getElementById("exitSpan");
-const pilotNameInput = document.getElementById("pname");
-
-// Node 2 elements
-const bandSelect2 = document.getElementById("bandSelect2");
-const channelSelect2 = document.getElementById("channelSelect2");
-const freqOutput2 = document.getElementById("freqOutput2");
-const enterRssiInput2 = document.getElementById("enter2");
-const exitRssiInput2 = document.getElementById("exit2");
-const enterRssiSpan2 = document.getElementById("enterSpan2");
-const exitRssiSpan2 = document.getElementById("exitSpan2");
-const pilotNameInput2 = document.getElementById("pname2");
-
-// Common elements
-const announcerSelect = document.getElementById("announcerSelect");
-const announcerRateInput = document.getElementById("rate");
-const ssidInput = document.getElementById("ssid");
-const pwdInput = document.getElementById("pwd");
-const minLapInput = document.getElementById("minLap");
-const raceStartDelayInput = document.getElementById("raceStartDelay");
-const alarmThreshold = document.getElementById("alarmThreshold");
-
+// Frequency lookup table for all bands
 const freqLookup = [
-  [5865, 5845, 5825, 5805, 5785, 5765, 5745, 5725],
-  [5733, 5752, 5771, 5790, 5809, 5828, 5847, 5866],
-  [5705, 5685, 5665, 5645, 5885, 5905, 5925, 5945],
-  [5740, 5760, 5780, 5800, 5820, 5840, 5860, 5880],
-  [5658, 5695, 5732, 5769, 5806, 5843, 5880, 5917],
-  [5362, 5399, 5436, 5473, 5510, 5547, 5584, 5621],
+  [5865, 5845, 5825, 5805, 5785, 5765, 5745, 5725], // Band A
+  [5733, 5752, 5771, 5790, 5809, 5828, 5847, 5866], // Band B
+  [5705, 5685, 5665, 5645, 5885, 5905, 5925, 5945], // Band E
+  [5740, 5760, 5780, 5800, 5820, 5840, 5860, 5880], // Fatshark
+  [5658, 5695, 5732, 5769, 5806, 5843, 5880, 5917], // RaceBand
+  [5362, 5399, 5436, 5473, 5510, 5547, 5584, 5621], // LowBand
 ];
 
-const config = document.getElementById("config");
-const race = document.getElementById("race");
-const calib = document.getElementById("calib");
-const ota = document.getElementById("ota");
+// Node state management - initialized after DOM loads
+let nodes = {};
 
-// Node 1 variables
-var enterRssi = 120, exitRssi = 100;
-var frequency = 0;
-var lapNo = -1;
-var lapTimes = [];
-const rssiBuffer = [];
-var rssiValue = 0;
-var crossing = false;
-var rssiSeries = new TimeSeries();
-var rssiCrossingSeries = new TimeSeries();
-var maxRssiValue = enterRssi + 10;
-var minRssiValue = exitRssi - 10;
+// Common elements - initialized after DOM loads
+let commonElements = {};
 
-// Node 2 variables
-var enterRssi2 = 120, exitRssi2 = 100;
-var frequency2 = 0;
-var lapNo2 = -1;
-var lapTimes2 = [];
-const rssiBuffer2 = [];
-var rssiValue2 = 0;
-var crossing2 = false;
-var rssiSeries2 = new TimeSeries();
-var rssiCrossingSeries2 = new TimeSeries();
-var maxRssiValue2 = enterRssi2 + 10;
-var minRssiValue2 = exitRssi2 - 10;
+// Common state
+let announcerRate = 1.0;
+let raceStartDelay = 5.0;
+let timerInterval = null;
+let rssiSending = false;
+let audioEnabled = false;
+let speakObjsQueue = [];
 
-// Common variables
-var announcerRate = 1.0;
-var raceStartDelay = 5.0; // seconds
+// Initialize DOM references and state
+function initializeNodes() {
+  nodes = {
+    1: {
+      // DOM element references
+      bandSelect: document.getElementById("bandSelect"),
+      channelSelect: document.getElementById("channelSelect"),
+      freqOutput: document.getElementById("freqOutput"),
+      enterRssiInput: document.getElementById("enter"),
+      exitRssiInput: document.getElementById("exit"),
+      enterRssiSpan: document.getElementById("enterSpan"),
+      exitRssiSpan: document.getElementById("exitSpan"),
+      pilotNameInput: document.getElementById("pname"),
+      pilotNameDisplay: document.getElementById("pilot1Name"),
+      lapTable: document.getElementById("lapTable"),
+      chartCanvas: document.getElementById("rssiChart"),
+      // State variables
+      enterRssi: 120,
+      exitRssi: 100,
+      frequency: 0,
+      lapNo: -1,
+      lapTimes: [],
+      rssiBuffer: [],
+      rssiValue: 0,
+      crossing: false,
+      rssiSeries: new TimeSeries(),
+      rssiCrossingSeries: new TimeSeries(),
+      maxRssiValue: 130,
+      minRssiValue: 90,
+      rssiChart: null,
+    },
+    2: {
+      // DOM element references
+      bandSelect: document.getElementById("bandSelect2"),
+      channelSelect: document.getElementById("channelSelect2"),
+      freqOutput: document.getElementById("freqOutput2"),
+      enterRssiInput: document.getElementById("enter2"),
+      exitRssiInput: document.getElementById("exit2"),
+      enterRssiSpan: document.getElementById("enterSpan2"),
+      exitRssiSpan: document.getElementById("exitSpan2"),
+      pilotNameInput: document.getElementById("pname2"),
+      pilotNameDisplay: document.getElementById("pilot2Name"),
+      lapTable: document.getElementById("lapTable2"),
+      chartCanvas: document.getElementById("rssiChart2"),
+      // State variables
+      enterRssi: 120,
+      exitRssi: 100,
+      frequency: 0,
+      lapNo: -1,
+      lapTimes: [],
+      rssiBuffer: [],
+      rssiValue: 0,
+      crossing: false,
+      rssiSeries: new TimeSeries(),
+      rssiCrossingSeries: new TimeSeries(),
+      maxRssiValue: 130,
+      minRssiValue: 90,
+      rssiChart: null,
+    }
+  };
 
-var timerInterval;
-const timer = document.getElementById("timer");
-const startRaceButton = document.getElementById("startRaceButton");
-const stopRaceButton = document.getElementById("stopRaceButton");
-const lapTable = document.getElementById("lapTable");
-const lapTable2 = document.getElementById("lapTable2");
+  commonElements = {
+    announcerSelect: document.getElementById("announcerSelect"),
+    announcerRateInput: document.getElementById("rate"),
+    ssidInput: document.getElementById("ssid"),
+    pwdInput: document.getElementById("pwd"),
+    minLapInput: document.getElementById("minLap"),
+    raceStartDelayInput: document.getElementById("raceStartDelay"),
+    alarmThreshold: document.getElementById("alarmThreshold"),
+    timer: document.getElementById("timer"),
+    startRaceButton: document.getElementById("startRaceButton"),
+    stopRaceButton: document.getElementById("stopRaceButton"),
+    batteryVoltageDisplay: document.getElementById("bvolt"),
+    config: document.getElementById("config"),
+    race: document.getElementById("race"),
+    calib: document.getElementById("calib"),
+    ota: document.getElementById("ota"),
+  };
+}
 
-const batteryVoltageDisplay = document.getElementById("bvolt");
-
-var rssiSending = false;
-var rssiChart, rssiChart2;
-
-var audioEnabled = false;
-var speakObjsQueue = [];
-
+// Initialize application on load
 onload = function (e) {
-  config.style.display = "block";
-  race.style.display = "none";
-  calib.style.display = "none";
-  ota.style.display = "none";
+  // Initialize DOM references first
+  initializeNodes();
+  
+  commonElements.config.style.display = "block";
+  commonElements.race.style.display = "none";
+  commonElements.calib.style.display = "none";
+  commonElements.ota.style.display = "none";
+  
+  // Enable voice by default
+  enableAudioLoop();
+  
+  loadConfiguration();
+  setupEventListeners();
+};
+
+// Load configuration from server
+function loadConfiguration() {
   fetch("/config")
     .then((response) => response.json())
     .then((config) => {
-      console.log(config);
-      // Node 1 config
-      setBandChannelIndex(config.freq, 1);
-      enterRssiInput.value = config.enterRssi;
-      updateEnterRssi(enterRssiInput, enterRssiInput.value);
-      exitRssiInput.value = config.exitRssi;
-      updateExitRssi(exitRssiInput, exitRssiInput.value);
-      pilotNameInput.value = config.name;
-      document.getElementById("pilot1Name").textContent = config.name || "Pilot 1";
+      console.log("Loaded config:", config);
       
-      // Node 2 config
-      setBandChannelIndex(config.freq2, 2);
-      enterRssiInput2.value = config.enterRssi2;
-      updateEnterRssi2(enterRssiInput2, enterRssiInput2.value);
-      exitRssiInput2.value = config.exitRssi2;
-      updateExitRssi2(exitRssiInput2, exitRssiInput2.value);
-      pilotNameInput2.value = config.name2;
-      document.getElementById("pilot2Name").textContent = config.name2 || "Pilot 2";
+      // Configure Node 1
+      configureNode(1, {
+        freq: config.freq,
+        enterRssi: config.enterRssi,
+        exitRssi: config.exitRssi,
+        pilotName: config.name,
+      });
       
-      // Common config
-      minLapInput.value = (parseFloat(config.minLap) / 10).toFixed(1);
-      updateMinLap(minLapInput, minLapInput.value);
+      // Configure Node 2
+      configureNode(2, {
+        freq: config.freq2,
+        enterRssi: config.enterRssi2,
+        exitRssi: config.exitRssi2,
+        pilotName: config.name2,
+      });
+      
+      // Configure common settings
+      commonElements.minLapInput.value = (parseFloat(config.minLap) / 10).toFixed(1);
+      
       if (config.raceStartDelay !== undefined) {
-        raceStartDelayInput.value = (parseFloat(config.raceStartDelay) / 10).toFixed(1);
-        updateRaceStartDelay(raceStartDelayInput, raceStartDelayInput.value);
+        commonElements.raceStartDelayInput.value = (parseFloat(config.raceStartDelay) / 10).toFixed(1);
+        raceStartDelay = parseFloat(commonElements.raceStartDelayInput.value);
       }
-      alarmThreshold.value = (parseFloat(config.alarm) / 10).toFixed(1);
-      updateAlarmThreshold(alarmThreshold, alarmThreshold.value);
-      announcerSelect.selectedIndex = config.anType;
-      announcerRateInput.value = (parseFloat(config.anRate) / 10).toFixed(1);
-      updateAnnouncerRate(announcerRateInput, announcerRateInput.value);
-      ssidInput.value = config.ssid;
-      pwdInput.value = config.pwd;
       
-      populateFreqOutput(1);
-      populateFreqOutput(2);
-      stopRaceButton.disabled = true;
-      startRaceButton.disabled = false;
+      commonElements.alarmThreshold.value = (parseFloat(config.alarm) / 10).toFixed(1);
+      commonElements.announcerSelect.selectedIndex = config.anType;
+      commonElements.announcerRateInput.value = (parseFloat(config.anRate) / 10).toFixed(1);
+      announcerRate = parseFloat(commonElements.announcerRateInput.value);
+      commonElements.ssidInput.value = config.ssid;
+      commonElements.pwdInput.value = config.pwd;
+      
+      commonElements.stopRaceButton.disabled = true;
+      commonElements.startRaceButton.disabled = false;
       clearInterval(timerInterval);
-      timer.innerHTML = "00:00:00s";
+      timerInterval = null;
+      commonElements.timer.innerHTML = "00:00:00s";
+      
       clearLaps();
-      createRssiChart();
-      createRssiChart2();
+      createRssiChart(1);
+      createRssiChart(2);
     });
-};
+}
 
+// Configure a specific node with settings
+function configureNode(nodeId, config) {
+  const node = nodes[nodeId];
+  
+  setBandChannelIndex(config.freq, nodeId);
+  node.enterRssiInput.value = config.enterRssi;
+  updateEnterRssiForNode(nodeId, config.enterRssi);
+  node.exitRssiInput.value = config.exitRssi;
+  updateExitRssiForNode(nodeId, config.exitRssi);
+  node.pilotNameInput.value = config.pilotName;
+  node.pilotNameDisplay.textContent = config.pilotName || `Pilot ${nodeId}`;
+  populateFreqOutput(nodeId);
+}
+
+// Setup all event listeners
+function setupEventListeners() {
+  // Node 1 event listeners
+  nodes[1].bandSelect.addEventListener("change", () => populateFreqOutput(1));
+  nodes[1].channelSelect.addEventListener("change", () => populateFreqOutput(1));
+  
+  // Node 2 event listeners
+  nodes[2].bandSelect.addEventListener("change", () => populateFreqOutput(2));
+  nodes[2].channelSelect.addEventListener("change", () => populateFreqOutput(2));
+  
+  // Start battery voltage polling
+  setInterval(getBatteryVoltage, 2000);
+  
+  // Start RSSI chart updates
+  setInterval(updateRssiCharts, 200);
+  
+  // Start event source for lap times and RSSI
+  setupEventSource();
+}
+
+// Battery voltage monitoring
 function getBatteryVoltage() {
   fetch("/status")
     .then((response) => response.text())
     .then((response) => {
       const batteryVoltageMatch = response.match(/Battery Voltage:\s*([\d.]+v)/);
       const batteryVoltage = batteryVoltageMatch ? batteryVoltageMatch[1] : null;
-      batteryVoltageDisplay.innerText = batteryVoltage;
+      commonElements.batteryVoltageDisplay.innerText = batteryVoltage;
     });
 }
 
-setInterval(getBatteryVoltage, 2000);
-
-function addRssiPoint() {
-  if (calib.style.display != "none") {
-    rssiChart.start();
-    rssiChart2.start();
-    
-    // Node 1
-    if (rssiBuffer.length > 0) {
-      rssiValue = parseInt(rssiBuffer.shift());
-      if (crossing && rssiValue < exitRssi) {
-        crossing = false;
-      } else if (!crossing && rssiValue > enterRssi) {
-        crossing = true;
+// Update RSSI charts for all nodes
+function updateRssiCharts() {
+  if (commonElements.calib.style.display !== "none") {
+    // Charts are visible, update them
+    [1, 2].forEach(nodeId => {
+      const node = nodes[nodeId];
+      if (node.rssiChart) {
+        node.rssiChart.start();
       }
-      maxRssiValue = Math.max(maxRssiValue, rssiValue);
-      minRssiValue = Math.min(minRssiValue, rssiValue);
-    }
-
-    rssiChart.options.horizontalLines = [
-      { color: "hsl(8.2, 86.5%, 53.7%)", lineWidth: 1.7, value: enterRssi },
-      { color: "hsl(25, 85%, 55%)", lineWidth: 1.7, value: exitRssi },
-    ];
-    rssiChart.options.maxValue = Math.max(maxRssiValue, enterRssi + 10);
-    rssiChart.options.minValue = Math.max(0, Math.min(minRssiValue, exitRssi - 10));
-
-    var now = Date.now();
-    rssiSeries.append(now, rssiValue);
-    if (crossing) {
-      rssiCrossingSeries.append(now, 256);
-    } else {
-      rssiCrossingSeries.append(now, -10);
-    }
-    
-    // Node 2
-    if (rssiBuffer2.length > 0) {
-      rssiValue2 = parseInt(rssiBuffer2.shift());
-      if (crossing2 && rssiValue2 < exitRssi2) {
-        crossing2 = false;
-      } else if (!crossing2 && rssiValue2 > enterRssi2) {
-        crossing2 = true;
+      
+      if (node.rssiBuffer.length > 0) {
+        node.rssiValue = parseInt(node.rssiBuffer.shift());
+        
+        // Update crossing state
+        if (node.crossing && node.rssiValue < node.exitRssi) {
+          node.crossing = false;
+        } else if (!node.crossing && node.rssiValue > node.enterRssi) {
+          node.crossing = true;
+        }
+        
+        // Update min/max values
+        node.maxRssiValue = Math.max(node.maxRssiValue, node.rssiValue);
+        node.minRssiValue = Math.min(node.minRssiValue, node.rssiValue);
+        
+        // Only append to chart when we have new data
+        const now = Date.now();
+        node.rssiSeries.append(now, node.rssiValue);
+        if (node.crossing) {
+          node.rssiCrossingSeries.append(now, 256);
+        } else {
+          node.rssiCrossingSeries.append(now, -10);
+        }
       }
-      maxRssiValue2 = Math.max(maxRssiValue2, rssiValue2);
-      minRssiValue2 = Math.min(minRssiValue2, rssiValue2);
-    }
-
-    rssiChart2.options.horizontalLines = [
-      { color: "hsl(8.2, 86.5%, 53.7%)", lineWidth: 1.7, value: enterRssi2 },
-      { color: "hsl(25, 85%, 55%)", lineWidth: 1.7, value: exitRssi2 },
-    ];
-    rssiChart2.options.maxValue = Math.max(maxRssiValue2, enterRssi2 + 10);
-    rssiChart2.options.minValue = Math.max(0, Math.min(minRssiValue2, exitRssi2 - 10));
-
-    rssiSeries2.append(now, rssiValue2);
-    if (crossing2) {
-      rssiCrossingSeries2.append(now, 256);
-    } else {
-      rssiCrossingSeries2.append(now, -10);
-    }
+      
+      // Update chart options
+      if (node.rssiChart) {
+        node.rssiChart.options.horizontalLines = [
+          { color: "hsl(8.2, 86.5%, 53.7%)", lineWidth: 1.7, value: node.enterRssi },
+          { color: "hsl(25, 85%, 55%)", lineWidth: 1.7, value: node.exitRssi },
+        ];
+        node.rssiChart.options.maxValue = Math.max(node.maxRssiValue, node.enterRssi + 10);
+        node.rssiChart.options.minValue = Math.max(0, Math.min(node.minRssiValue, node.exitRssi - 10));
+      }
+    });
   } else {
-    rssiChart.stop();
-    rssiChart2.stop();
-    maxRssiValue = enterRssi + 10;
-    minRssiValue = exitRssi - 10;
-    maxRssiValue2 = enterRssi2 + 10;
-    minRssiValue2 = exitRssi2 - 10;
+    // Charts hidden, stop them
+    [1, 2].forEach(nodeId => {
+      const node = nodes[nodeId];
+      if (node.rssiChart) {
+        node.rssiChart.stop();
+      }
+      node.maxRssiValue = node.enterRssi + 10;
+      node.minRssiValue = node.exitRssi - 10;
+    });
   }
 }
 
-setInterval(addRssiPoint, 200);
-
-function createRssiChart() {
-  rssiChart = new SmoothieChart({
+// Create RSSI chart for a node
+function createRssiChart(nodeId) {
+  const node = nodes[nodeId];
+  
+  node.rssiChart = new SmoothieChart({
     responsive: true,
     millisPerPixel: 50,
     grid: {
@@ -237,69 +290,41 @@ function createRssiChart() {
     maxValue: 1,
     minValue: 0,
   });
-  rssiChart.addTimeSeries(rssiSeries, {
+  
+  node.rssiChart.addTimeSeries(node.rssiSeries, {
     lineWidth: 1.7,
     strokeStyle: "hsl(214, 53%, 60%)",
     fillStyle: "hsla(214, 53%, 60%, 0.4)",
   });
-  rssiChart.addTimeSeries(rssiCrossingSeries, {
+  
+  node.rssiChart.addTimeSeries(node.rssiCrossingSeries, {
     lineWidth: 1.7,
     strokeStyle: "none",
     fillStyle: "hsla(136, 71%, 70%, 0.3)",
   });
-  rssiChart.streamTo(document.getElementById("rssiChart"), 200);
+  
+  node.rssiChart.streamTo(node.chartCanvas, 200);
 }
 
-function createRssiChart2() {
-  rssiChart2 = new SmoothieChart({
-    responsive: true,
-    millisPerPixel: 50,
-    grid: {
-      strokeStyle: "rgba(255,255,255,0.25)",
-      sharpLines: true,
-      verticalSections: 0,
-      borderVisible: false,
-    },
-    labels: {
-      precision: 0,
-    },
-    maxValue: 1,
-    minValue: 0,
-  });
-  rssiChart2.addTimeSeries(rssiSeries2, {
-    lineWidth: 1.7,
-    strokeStyle: "hsl(214, 53%, 60%)",
-    fillStyle: "hsla(214, 53%, 60%, 0.4)",
-  });
-  rssiChart2.addTimeSeries(rssiCrossingSeries2, {
-    lineWidth: 1.7,
-    strokeStyle: "none",
-    fillStyle: "hsla(136, 71%, 70%, 0.3)",
-  });
-  rssiChart2.streamTo(document.getElementById("rssiChart2"), 200);
-}
-
+// Tab management
 function openTab(evt, tabName) {
-  // Declare all variables
-  var i, tabcontent, tablinks;
-
-  // Get all elements with class="tabcontent" and hide them
-  tabcontent = document.getElementsByClassName("tabcontent");
-  for (i = 0; i < tabcontent.length; i++) {
+  // Hide all tabs
+  const tabcontent = document.getElementsByClassName("tabcontent");
+  for (let i = 0; i < tabcontent.length; i++) {
     tabcontent[i].style.display = "none";
   }
-
-  // Get all elements with class="tablinks" and remove the class "active"
-  tablinks = document.getElementsByClassName("tablinks");
-  for (i = 0; i < tablinks.length; i++) {
+  
+  // Remove active class from all tabs
+  const tablinks = document.getElementsByClassName("tablinks");
+  for (let i = 0; i < tablinks.length; i++) {
     tablinks[i].className = tablinks[i].className.replace(" active", "");
   }
-
-  // Show the current tab, and add an "active" class to the button that opened the tab
+  
+  // Show current tab and mark as active
   document.getElementById(tabName).style.display = "block";
   evt.currentTarget.className += " active";
-
-  // if event comes from calibration tab, signal to start sending RSSI events
+  
+  // Handle RSSI streaming for calibration tab
   if (tabName === "calib" && !rssiSending) {
     fetch("/timer/rssiStart", {
       method: "POST",
@@ -313,10 +338,10 @@ function openTab(evt, tabName) {
         return response.json();
       })
       .then((response) => {
-        console.log("/timer/rssiStart:" + JSON.stringify(response));
-        // Ensure charts are properly sized and rendering
-        if (rssiChart) rssiChart.start();
-        if (rssiChart2) rssiChart2.start();
+        console.log("/timer/rssiStart:", JSON.stringify(response));
+        [1, 2].forEach(nodeId => {
+          if (nodes[nodeId].rssiChart) nodes[nodeId].rssiChart.start();
+        });
       });
   } else if (rssiSending) {
     fetch("/timer/rssiStop", {
@@ -330,50 +355,53 @@ function openTab(evt, tabName) {
         if (response.ok) rssiSending = false;
         return response.json();
       })
-      .then((response) => console.log("/timer/rssiStop:" + JSON.stringify(response)));
+      .then((response) => console.log("/timer/rssiStop:", JSON.stringify(response)));
   }
 }
 
-function updateEnterRssi(obj, value) {
-  enterRssi = parseInt(value);
-  enterRssiSpan.textContent = enterRssi;
-  if (enterRssi <= exitRssi) {
-    exitRssi = Math.max(0, enterRssi - 1);
-    exitRssiInput.value = exitRssi;
-    exitRssiSpan.textContent = exitRssi;
+// RSSI threshold updates - internal function
+function updateEnterRssiForNode(nodeId, value) {
+  const node = nodes[nodeId];
+  node.enterRssi = parseInt(value);
+  node.enterRssiSpan.textContent = node.enterRssi;
+  
+  if (node.enterRssi <= node.exitRssi) {
+    node.exitRssi = Math.max(0, node.enterRssi - 1);
+    node.exitRssiInput.value = node.exitRssi;
+    node.exitRssiSpan.textContent = node.exitRssi;
   }
+}
+
+function updateExitRssiForNode(nodeId, value) {
+  const node = nodes[nodeId];
+  node.exitRssi = parseInt(value);
+  node.exitRssiSpan.textContent = node.exitRssi;
+  
+  if (node.exitRssi >= node.enterRssi) {
+    node.enterRssi = Math.min(255, node.exitRssi + 1);
+    node.enterRssiInput.value = node.enterRssi;
+    node.enterRssiSpan.textContent = node.enterRssi;
+  }
+}
+
+// HTML compatibility wrappers (called from inline oninput handlers)
+function updateEnterRssi(obj, value) {
+  updateEnterRssiForNode(1, value);
 }
 
 function updateExitRssi(obj, value) {
-  exitRssi = parseInt(value);
-  exitRssiSpan.textContent = exitRssi;
-  if (exitRssi >= enterRssi) {
-    enterRssi = Math.min(255, exitRssi + 1);
-    enterRssiInput.value = enterRssi;
-    enterRssiSpan.textContent = enterRssi;
-  }
+  updateExitRssiForNode(1, value);
 }
 
 function updateEnterRssi2(obj, value) {
-  enterRssi2 = parseInt(value);
-  enterRssiSpan2.textContent = enterRssi2;
-  if (enterRssi2 <= exitRssi2) {
-    exitRssi2 = Math.max(0, enterRssi2 - 1);
-    exitRssiInput2.value = exitRssi2;
-    exitRssiSpan2.textContent = exitRssi2;
-  }
+  updateEnterRssiForNode(2, value);
 }
 
 function updateExitRssi2(obj, value) {
-  exitRssi2 = parseInt(value);
-  exitRssiSpan2.textContent = exitRssi2;
-  if (exitRssi2 >= enterRssi2) {
-    enterRssi2 = Math.min(255, exitRssi2 + 1);
-    enterRssiInput2.value = enterRssi2;
-    enterRssiSpan2.textContent = enterRssi2;
-  }
+  updateExitRssiForNode(2, value);
 }
 
+// Configuration management
 function saveConfig() {
   fetch("/config", {
     method: "POST",
@@ -382,237 +410,81 @@ function saveConfig() {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      freq: frequency,
-      minLap: parseInt(minLapInput.value * 10),
+      freq: nodes[1].frequency,
+      minLap: parseInt(commonElements.minLapInput.value * 10),
       raceStartDelay: parseInt(raceStartDelay * 10),
-      alarm: parseInt(alarmThreshold.value * 10),
-      anType: announcerSelect.selectedIndex,
+      alarm: parseInt(commonElements.alarmThreshold.value * 10),
+      anType: commonElements.announcerSelect.selectedIndex,
       anRate: parseInt(announcerRate * 10),
-      enterRssi: enterRssi,
-      exitRssi: exitRssi,
-      name: pilotNameInput.value,
-      freq2: frequency2,
-      enterRssi2: enterRssi2,
-      exitRssi2: exitRssi2,
-      name2: pilotNameInput2.value,
-      ssid: ssidInput.value,
-      pwd: pwdInput.value,
+      enterRssi: nodes[1].enterRssi,
+      exitRssi: nodes[1].exitRssi,
+      name: nodes[1].pilotNameInput.value,
+      freq2: nodes[2].frequency,
+      enterRssi2: nodes[2].enterRssi,
+      exitRssi2: nodes[2].exitRssi,
+      name2: nodes[2].pilotNameInput.value,
+      ssid: commonElements.ssidInput.value,
+      pwd: commonElements.pwdInput.value,
     }),
   })
     .then((response) => response.json())
-    .then((response) => console.log("/config:" + JSON.stringify(response)));
+    .then((response) => console.log("/config:", JSON.stringify(response)));
 }
 
-function populateFreqOutput(node) {
-  if (node === 1) {
-    let band = bandSelect.options[bandSelect.selectedIndex].value;
-    let chan = channelSelect.options[channelSelect.selectedIndex].value;
-    frequency = freqLookup[bandSelect.selectedIndex][channelSelect.selectedIndex];
-    freqOutput.textContent = band + chan + " " + frequency;
-  } else if (node === 2) {
-    let band = bandSelect2.options[bandSelect2.selectedIndex].value;
-    let chan = channelSelect2.options[channelSelect2.selectedIndex].value;
-    frequency2 = freqLookup[bandSelect2.selectedIndex][channelSelect2.selectedIndex];
-    freqOutput2.textContent = band + chan + " " + frequency2;
+// Frequency management
+function populateFreqOutput(nodeId) {
+  const node = nodes[nodeId];
+  const band = node.bandSelect.options[node.bandSelect.selectedIndex].value;
+  const chan = node.channelSelect.options[node.channelSelect.selectedIndex].value;
+  node.frequency = freqLookup[node.bandSelect.selectedIndex][node.channelSelect.selectedIndex];
+  node.freqOutput.textContent = band + chan + " " + node.frequency;
+}
+
+function setBandChannelIndex(freq, nodeId) {
+  const node = nodes[nodeId];
+  for (let i = 0; i < freqLookup.length; i++) {
+    for (let j = 0; j < freqLookup[i].length; j++) {
+      if (freqLookup[i][j] == freq) {
+        node.bandSelect.selectedIndex = i;
+        node.channelSelect.selectedIndex = j;
+        return;
+      }
+    }
   }
 }
 
-// Event listeners for Node 1 band/channel changes
-bandSelect.addEventListener("change", function() {
-  populateFreqOutput(1);
-});
-
-channelSelect.addEventListener("change", function() {
-  populateFreqOutput(1);
-});
-
-// Event listeners for Node 2 band/channel changes
-bandSelect2.addEventListener("change", function() {
-  populateFreqOutput(2);
-});
-
-channelSelect2.addEventListener("change", function() {
-  populateFreqOutput(2);
-});
-
+// Common UI updates
 function updateAnnouncerRate(obj, value) {
   announcerRate = parseFloat(value);
-  $(obj).parent().find("span").text(announcerRate.toFixed(1));
 }
 
 function updateMinLap(obj, value) {
-  $(obj)
-    .parent()
-    .find("span")
-    .text(parseFloat(value).toFixed(1) + "s");
+  // Value is already displayed by the input field
 }
 
 function updateRaceStartDelay(obj, value) {
   raceStartDelay = parseFloat(value);
-  $(obj)
-    .parent()
-    .find("span")
-    .text(raceStartDelay.toFixed(1) + "s");
 }
 
 function updateAlarmThreshold(obj, value) {
-  $(obj)
-    .parent()
-    .find("span")
-    .text(parseFloat(value).toFixed(1) + "v");
+  // Value is already displayed by the input field
 }
 
-// function getAnnouncerVoices() {
-//   $().articulate("getVoices", "#voiceSelect", "System Default Announcer Voice");
-// }
-
+// Audio functions
 function beep(duration, frequency, type) {
-  var context = new AudioContext();
-  var oscillator = context.createOscillator();
+  const context = new AudioContext();
+  const oscillator = context.createOscillator();
   oscillator.type = type;
   oscillator.frequency.value = frequency;
   oscillator.connect(context.destination);
   oscillator.start();
-  // Beep for 500 milliseconds
   setTimeout(function () {
     oscillator.stop();
   }, duration);
 }
 
-function addLap(lapStr, node = 1) {
-  const pilotName = node === 1 ? pilotNameInput.value : pilotNameInput2.value;
-  const tableId = node === 1 ? "lapTable" : "lapTable2";
-  var last2lapStr = "";
-  var last3lapStr = "";
-  const newLap = parseFloat(lapStr);
-  
-  if (node === 1) {
-    lapNo += 1;
-    const table = document.getElementById(tableId);
-    const row = table.insertRow();
-    const cell1 = row.insertCell(0);
-    const cell2 = row.insertCell(1);
-    const cell3 = row.insertCell(2);
-    cell1.innerHTML = lapNo;
-    if (lapNo == 0) {
-      cell2.innerHTML = "Hole Shot: " + lapStr + "s";
-    } else {
-      cell2.innerHTML = lapStr + "s";
-    }
-    // Calculate 2-lap time for announcer (not displayed in table)
-    if (lapTimes.length >= 2 && lapNo != 0) {
-      last2lapStr = (newLap + lapTimes[lapTimes.length - 1]).toFixed(2);
-    }
-    // Calculate and display 3-lap time
-    if (lapTimes.length >= 3 && lapNo != 0) {
-      last3lapStr = (newLap + lapTimes[lapTimes.length - 2] + lapTimes[lapTimes.length - 1]).toFixed(2);
-      cell3.innerHTML = last3lapStr + "s";
-    }
-    lapTimes.push(newLap);
-  } else {
-    lapNo2 += 1;
-    const table = document.getElementById(tableId);
-    const row = table.insertRow();
-    const cell1 = row.insertCell(0);
-    const cell2 = row.insertCell(1);
-    const cell3 = row.insertCell(2);
-    cell1.innerHTML = lapNo2;
-    if (lapNo2 == 0) {
-      cell2.innerHTML = "Hole Shot: " + lapStr + "s";
-    } else {
-      cell2.innerHTML = lapStr + "s";
-    }
-    // Calculate 2-lap time for announcer (not displayed in table)
-    if (lapTimes2.length >= 2 && lapNo2 != 0) {
-      last2lapStr = (newLap + lapTimes2[lapTimes2.length - 1]).toFixed(2);
-    }
-    // Calculate and display 3-lap time
-    if (lapTimes2.length >= 3 && lapNo2 != 0) {
-      last3lapStr = (newLap + lapTimes2[lapTimes2.length - 2] + lapTimes2[lapTimes2.length - 1]).toFixed(2);
-      cell3.innerHTML = last3lapStr + "s";
-    }
-    lapTimes2.push(newLap);
-  }
-
-  const currentLapNo = node === 1 ? lapNo : lapNo2;
-  switch (announcerSelect.options[announcerSelect.selectedIndex].value) {
-    case "beep":
-      beep(100, 330, "square");
-      break;
-    case "1lap":
-      if (currentLapNo == 0) {
-        queueSpeak(`<p>Hole Shot ${lapStr}<p>`);
-      } else {
-        const lapNoStr = pilotName + " Lap " + currentLapNo + ", ";
-        const text = "<p>" + lapNoStr + lapStr + "</p>";
-        queueSpeak(text);
-      }
-      break;
-    case "2lap":
-      if (currentLapNo == 0) {
-        queueSpeak(`<p>Hole Shot ${lapStr}<p>`);
-      } else if (last2lapStr != "") {
-        const text2 = "<p>" + pilotName + " 2 laps " + last2lapStr + "</p>";
-        queueSpeak(text2);
-      }
-      break;
-    case "3lap":
-      if (currentLapNo == 0) {
-        queueSpeak(`<p>Hole Shot ${lapStr}<p>`);
-      } else if (last3lapStr != "") {
-        const text3 = "<p>" + pilotName + " 3 laps " + last3lapStr + "</p>";
-        queueSpeak(text3);
-      }
-      break;
-    default:
-      break;
-  }
-}
-
-function startTimer(node = 0) {
-  if (!timerInterval) {
-    var millis = 0;
-    var seconds = 0;
-    var minutes = 0;
-    timerInterval = setInterval(function () {
-      millis += 1;
-
-      if (millis == 100) {
-        millis = 0;
-        seconds++;
-
-        if (seconds == 60) {
-          seconds = 0;
-          minutes++;
-
-          if (minutes == 60) {
-            minutes = 0;
-          }
-        }
-      }
-      let m = minutes < 10 ? "0" + minutes : minutes;
-      let s = seconds < 10 ? "0" + seconds : seconds;
-      let ms = millis < 10 ? "0" + millis : millis;
-      timer.innerHTML = `${m}:${s}:${ms}s`;
-    }, 10);
-  }
-
-  const body = node ? `node=${node}` : "";
-  fetch("/timer/start?" + body, {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-    },
-  })
-    .then((response) => response.json())
-    .then((response) => console.log("/timer/start:" + JSON.stringify(response)));
-}
-
 function queueSpeak(obj) {
-  if (!audioEnabled) {
-    return;
-  }
+  if (!audioEnabled) return;
   speakObjsQueue.push(obj);
 }
 
@@ -633,12 +505,11 @@ async function enableAudioLoop() {
 function disableAudioLoop() {
   audioEnabled = false;
 }
-function generateAudio() {
-  if (!audioEnabled) {
-    return;
-  }
 
-  const pilotName = pilotNameInput.value;
+function generateAudio() {
+  if (!audioEnabled) return;
+  
+  const pilotName = nodes[1].pilotNameInput.value;
   queueSpeak('<div>testing sound for pilot ' + pilotName + '</div>');
   for (let i = 1; i <= 3; i++) {
     queueSpeak('<div>' + i + '</div>')
@@ -649,9 +520,135 @@ function doSpeak(obj) {
   $(obj).articulate("rate", announcerRate).articulate('speak');
 }
 
+// Lap management
+function addLap(lapStr, nodeId = 1) {
+  const node = nodes[nodeId];
+  const pilotName = node.pilotNameInput.value;
+  let last2lapStr = "";
+  let last3lapStr = "";
+  const newLap = parseFloat(lapStr);
+  
+  node.lapNo += 1;
+  const table = node.lapTable;
+  const row = table.insertRow();
+  const cell1 = row.insertCell(0);
+  const cell2 = row.insertCell(1);
+  const cell3 = row.insertCell(2);
+  
+  cell1.innerHTML = node.lapNo;
+  if (node.lapNo == 0) {
+    cell2.innerHTML = "Hole Shot: " + lapStr + "s";
+  } else {
+    cell2.innerHTML = lapStr + "s";
+  }
+  
+  // Calculate 2-lap time for announcer (not displayed in table)
+  if (node.lapTimes.length >= 2 && node.lapNo != 0) {
+    last2lapStr = (newLap + node.lapTimes[node.lapTimes.length - 1]).toFixed(2);
+  }
+  
+  // Calculate and display 3-lap time
+  if (node.lapTimes.length >= 3 && node.lapNo != 0) {
+    last3lapStr = (newLap + node.lapTimes[node.lapTimes.length - 2] + node.lapTimes[node.lapTimes.length - 1]).toFixed(2);
+    cell3.innerHTML = last3lapStr + "s";
+  }
+  
+  node.lapTimes.push(newLap);
+  
+  // Announce lap time
+  const announcerType = commonElements.announcerSelect.options[commonElements.announcerSelect.selectedIndex].value;
+  switch (announcerType) {
+    case "beep":
+      beep(100, 330, "square");
+      break;
+    case "1lap":
+      if (node.lapNo == 0) {
+        queueSpeak(`<p>Hole Shot ${lapStr}<p>`);
+      } else {
+        const lapNoStr = pilotName + " Lap " + node.lapNo + ", ";
+        const text = "<p>" + lapNoStr + lapStr + "</p>";
+        queueSpeak(text);
+      }
+      break;
+    case "2lap":
+      if (node.lapNo == 0) {
+        queueSpeak(`<p>Hole Shot ${lapStr}<p>`);
+      } else if (last2lapStr != "") {
+        const text2 = "<p>" + pilotName + " 2 laps " + last2lapStr + "</p>";
+        queueSpeak(text2);
+      }
+      break;
+    case "3lap":
+      if (node.lapNo == 0) {
+        queueSpeak(`<p>Hole Shot ${lapStr}<p>`);
+      } else if (last3lapStr != "") {
+        const text3 = "<p>" + pilotName + " 3 laps " + last3lapStr + "</p>";
+        queueSpeak(text3);
+      }
+      break;
+    default:
+      break;
+  }
+}
+
+function clearLaps() {
+  const tableHeaderRowCount = 1;
+  
+  [1, 2].forEach(nodeId => {
+    const node = nodes[nodeId];
+    const rowCount = node.lapTable.rows.length;
+    for (let i = tableHeaderRowCount; i < rowCount; i++) {
+      node.lapTable.deleteRow(tableHeaderRowCount);
+    }
+    node.lapNo = -1;
+    node.lapTimes = [];
+  });
+}
+
+// Timer management
+function startTimer(node = 0) {
+  if (!timerInterval) {
+    let millis = 0;
+    let seconds = 0;
+    let minutes = 0;
+    timerInterval = setInterval(function () {
+      millis += 1;
+
+      if (millis == 100) {
+        millis = 0;
+        seconds++;
+
+        if (seconds == 60) {
+          seconds = 0;
+          minutes++;
+
+          if (minutes == 60) {
+            minutes = 0;
+          }
+        }
+      }
+      let m = minutes < 10 ? "0" + minutes : minutes;
+      let s = seconds < 10 ? "0" + seconds : seconds;
+      let ms = millis < 10 ? "0" + millis : millis;
+      commonElements.timer.innerHTML = `${m}:${s}:${ms}s`;
+    }, 10);
+  }
+
+  const body = node ? `node=${node}` : "";
+  fetch("/timer/start?" + body, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+  })
+    .then((response) => response.json())
+    .then((response) => console.log("/timer/start:", JSON.stringify(response)));
+}
+
 async function startRace(node = 0) {
   if (!node) {
-    startRaceButton.disabled = true;
+    commonElements.startRaceButton.disabled = true;
     
     if (raceStartDelay > 0) {
       // Calculate time taken to say starting phrase
@@ -672,7 +669,7 @@ async function startRace(node = 0) {
       beep(500, 880, "square");
     }
     
-    stopRaceButton.disabled = false;
+    commonElements.stopRaceButton.disabled = false;
   }
   startTimer(node);
 }
@@ -683,19 +680,19 @@ function stopRace(node = 0) {
     queueSpeak('<p>Race stopped</p>');
     clearInterval(timerInterval);
     timerInterval = null;
-    timer.innerHTML = "00:00:00s";
-    stopRaceButton.disabled = true;
-    startRaceButton.disabled = false;
-    lapNo = -1;
-    lapTimes = [];
-    lapNo2 = -1;
-    lapTimes2 = [];
+    commonElements.timer.innerHTML = "00:00:00s";
+    commonElements.stopRaceButton.disabled = true;
+    commonElements.startRaceButton.disabled = false;
+    nodes[1].lapNo = -1;
+    nodes[1].lapTimes = [];
+    nodes[2].lapNo = -1;
+    nodes[2].lapTimes = [];
   } else {
     // Stopping individual node - also stop timer if both nodes are now stopped
     if (timerInterval) {
       clearInterval(timerInterval);
       timerInterval = null;
-      timer.innerHTML = "00:00:00s";
+      commonElements.timer.innerHTML = "00:00:00s";
     }
   }
 
@@ -708,85 +705,52 @@ function stopRace(node = 0) {
     },
   })
     .then((response) => response.json())
-    .then((response) => console.log("/timer/stop:" + JSON.stringify(response)));
+    .then((response) => console.log("/timer/stop:", JSON.stringify(response)));
     
   if (node === 1) {
-    lapNo = -1;
-    lapTimes = [];
+    nodes[1].lapNo = -1;
+    nodes[1].lapTimes = [];
   } else if (node === 2) {
-    lapNo2 = -1;
-    lapTimes2 = [];
+    nodes[2].lapNo = -1;
+    nodes[2].lapTimes = [];
   }
 }
 
-function clearLaps() {
-  var tableHeaderRowCount = 1;
-  var rowCount = lapTable.rows.length;
-  for (var i = tableHeaderRowCount; i < rowCount; i++) {
-    lapTable.deleteRow(tableHeaderRowCount);
-  }
-  var rowCount2 = lapTable2.rows.length;
-  for (var i = tableHeaderRowCount; i < rowCount2; i++) {
-    lapTable2.deleteRow(tableHeaderRowCount);
-  }
-  lapNo = -1;
-  lapTimes = [];
-  lapNo2 = -1;
-  lapTimes2 = [];
-}
+// Event source for server-sent events
+function setupEventSource() {
+  if (!!window.EventSource) {
+    const source = new EventSource("/events");
 
-if (!!window.EventSource) {
-  var source = new EventSource("/events");
-
-  source.addEventListener(
-    "open",
-    function (e) {
+    source.addEventListener("open", function (e) {
       console.log("Events Connected");
-    },
-    false
-  );
+    }, false);
 
-  source.addEventListener(
-    "error",
-    function (e) {
+    source.addEventListener("error", function (e) {
       if (e.target.readyState != EventSource.OPEN) {
         console.log("Events Disconnected");
       }
-    },
-    false
-  );
+    }, false);
 
-  source.addEventListener(
-    "rssi",
-    function (e) {
+    source.addEventListener("rssi", function (e) {
       try {
         const data = JSON.parse(e.data);
-        if (data.node === 1) {
-          rssiBuffer.push(data.rssi);
-          if (rssiBuffer.length > 10) {
-            rssiBuffer.shift();
+        const node = nodes[data.node];
+        if (node) {
+          node.rssiBuffer.push(data.rssi);
+          if (node.rssiBuffer.length > 10) {
+            node.rssiBuffer.shift();
           }
-          console.log("rssi node 1:", data.rssi, "buffer size", rssiBuffer.length);
-        } else if (data.node === 2) {
-          rssiBuffer2.push(data.rssi);
-          if (rssiBuffer2.length > 10) {
-            rssiBuffer2.shift();
-          }
-          console.log("rssi node 2:", data.rssi, "buffer size", rssiBuffer2.length);
+          console.log("rssi node", data.node, ":", data.rssi, "buffer size", node.rssiBuffer.length);
         }
       } catch (error) {
         console.error("Error parsing RSSI:", error);
       }
-    },
-    false
-  );
+    }, false);
 
-  source.addEventListener(
-    "lap",
-    function (e) {
+    source.addEventListener("lap", function (e) {
       try {
         const data = JSON.parse(e.data);
-        var lap = (parseFloat(data.time) / 1000).toFixed(2);
+        const lap = (parseFloat(data.time) / 1000).toFixed(2);
         console.log("lap node", data.node, "raw:", data.time, " formatted:", lap);
         // Use requestAnimationFrame to ensure immediate DOM update
         requestAnimationFrame(() => {
@@ -795,23 +759,7 @@ if (!!window.EventSource) {
       } catch (error) {
         console.error("Error parsing lap:", error);
       }
-    },
-    false
-  );
-}
-
-function setBandChannelIndex(freq, node) {
-  for (var i = 0; i < freqLookup.length; i++) {
-    for (var j = 0; j < freqLookup[i].length; j++) {
-      if (freqLookup[i][j] == freq) {
-        if (node === 1) {
-          bandSelect.selectedIndex = i;
-          channelSelect.selectedIndex = j;
-        } else if (node === 2) {
-          bandSelect2.selectedIndex = i;
-          channelSelect2.selectedIndex = j;
-        }
-      }
-    }
+    }, false);
   }
 }
+

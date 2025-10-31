@@ -12,6 +12,7 @@ void BatteryMonitor::init(uint8_t pin, uint8_t batScale, uint8_t batAdd, Buzzer 
     add = batAdd;
     state = ALARM_OFF;
     memset(measurements, 0, sizeof(measurements));
+    averageSum = 0;
     measurementIndex = 0;
     lastCheckTimeMs = millis();
     pinMode(vbatPin, INPUT);
@@ -20,8 +21,6 @@ void BatteryMonitor::init(uint8_t pin, uint8_t batScale, uint8_t batAdd, Buzzer 
         getBatteryVoltage();  // kick averaging sum up to speed.
     }
 }
-
-static uint16_t averageSum = 0;
 
 uint8_t BatteryMonitor::getBatteryVoltage() {
     // 0-3.3V maps to 0-4095, battery voltage ranges from 4.2V to 3.0V, but the voltage is divided, so 2.1V - 1.5V

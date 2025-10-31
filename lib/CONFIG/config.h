@@ -128,4 +128,5 @@ class Config {
     bool modified;
     volatile uint32_t checkTimeMs = 0;
     void setDefaults();
+    void populateJsonDocument(JsonDocument& doc);
 };

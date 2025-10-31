@@ -8,22 +8,21 @@
 
 #include "debug.h"
 
+// Network constants
 static const uint8_t DNS_PORT = 53;
-static IPAddress netMsk(255, 255, 255, 0);
-static DNSServer dnsServer;
-static IPAddress ipAddress;
-static AsyncWebServer server(80);
-static AsyncEventSource events("/events");
-
-static const char *wifi_hostname = "plt";
-static const char *wifi_ap_ssid_prefix = "PhobosLT";
-static const char *wifi_ap_password = "phoboslt";
-static const char *wifi_ap_address = "20.0.0.1";
-String wifi_ap_ssid;
+static const char *WIFI_HOSTNAME = "plt";
+static const char *WIFI_AP_SSID_PREFIX = "PhobosLT";
+static const char *WIFI_AP_PASSWORD = "phoboslt";
+static const char *WIFI_AP_ADDRESS = "20.0.0.1";
 
 void Webserver::init(Config *config, LapTimer *lapTimer1, LapTimer *lapTimer2, BatteryMonitor *batMonitor, Buzzer *buzzer, Led *l) {
 
-    ipAddress.fromString(wifi_ap_address);
+    // Initialize network objects
+    netMsk = IPAddress(255, 255, 255, 0);
+    ipAddress.fromString(WIFI_AP_ADDRESS);
+    server = new AsyncWebServer(80);
+    events = new AsyncEventSource("/events");
+    dnsServer = new DNSServer();
 
     conf = config;
     timer1 = lapTimer1;
@@ -32,8 +31,8 @@ void Webserver::init(Config *config, LapTimer *lapTimer1, LapTimer *lapTimer2, B
     buz = buzzer;
     led = l;
 
-    wifi_ap_ssid = String(wifi_ap_ssid_prefix) + "_" + WiFi.macAddress().substring(WiFi.macAddress().length() - 6);
-    wifi_ap_ssid.replace(":", "");
+    wifiApSsid = String(WIFI_AP_SSID_PREFIX) + "_" + WiFi.macAddress().substring(WiFi.macAddress().length() - 6);
+    wifiApSsid.replace(":", "");
 
     WiFi.persistent(false);
     WiFi.disconnect();
@@ -51,17 +50,17 @@ void Webserver::init(Config *config, LapTimer *lapTimer1, LapTimer *lapTimer2, B
 }
 
 void Webserver::sendRssiEvent(uint8_t rssi, uint8_t node) {
-    if (!servicesStarted) return;
+    if (!servicesStarted || !events) return;
     char buf[32];
     snprintf(buf, sizeof(buf), "{\"node\":%u,\"rssi\":%u}", node, rssi);
-    events.send(buf, "rssi");
+    events->send(buf, "rssi");
 }
 
 void Webserver::sendLaptimeEvent(uint32_t lapTime, uint8_t node) {
-    if (!servicesStarted) return;
+    if (!servicesStarted || !events) return;
     char buf[32];
     snprintf(buf, sizeof(buf), "{\"node\":%u,\"time\":%u}", node, lapTime);
-    events.send(buf, "lap");
+    events->send(buf, "lap");
 }
 
 void Webserver::handleWebUpdate(uint32_t currentTimeMs) {
@@ -121,11 +120,11 @@ void Webserver::handleWebUpdate(uint32_t currentTimeMs) {
 
                 WiFi.disconnect();
                 wifiMode = WIFI_AP;
-                WiFi.setHostname(wifi_hostname);  // hostname must be set before the mode is set to STA
+                WiFi.setHostname(WIFI_HOSTNAME);  // hostname must be set before the mode is set to STA
                 WiFi.mode(wifiMode);
                 changeTimeMs = currentTimeMs;
                 WiFi.softAPConfig(ipAddress, ipAddress, netMsk);
-                WiFi.softAP(wifi_ap_ssid.c_str(), wifi_ap_password);
+                WiFi.softAP(wifiApSsid.c_str(), WIFI_AP_PASSWORD);
                 startServices();
                 buz->beep(1000);
                 led->on(1000);
@@ -133,7 +132,7 @@ void Webserver::handleWebUpdate(uint32_t currentTimeMs) {
             case WIFI_STA:
                 DEBUG("Connecting to WiFi network\n");
                 wifiMode = WIFI_STA;
-                WiFi.setHostname(wifi_hostname);  // hostname must be set before the mode is set to STA
+                WiFi.setHostname(WIFI_HOSTNAME);  // hostname must be set before the mode is set to STA
                 WiFi.mode(wifiMode);
                 changeTimeMs = currentTimeMs;
                 WiFi.begin(conf->getSsid(), conf->getPassword());
@@ -146,8 +145,8 @@ void Webserver::handleWebUpdate(uint32_t currentTimeMs) {
         changeMode = WIFI_OFF;
     }
 
-    if (servicesStarted) {
-        dnsServer.processNextRequest();
+    if (servicesStarted && dnsServer) {
+        dnsServer->processNextRequest();
     }
 }
 
@@ -173,9 +172,7 @@ static String toStringIp(IPAddress ip) {
 }
 
 static bool captivePortal(AsyncWebServerRequest *request) {
-    extern const char *wifi_hostname;
-
-    if (!isIp(request->host()) && request->host() != (String(wifi_hostname) + ".local")) {
+    if (!isIp(request->host()) && request->host() != (String(WIFI_HOSTNAME) + ".local")) {
         DEBUG("Request redirected to captive portal\n");
         request->redirect(String("http://") + toStringIp(request->client()->localIP()));
         return true;
@@ -223,12 +220,12 @@ static bool startLittleFS() {
 }
 
 static void startMDNS() {
-    if (!MDNS.begin(wifi_hostname)) {
+    if (!MDNS.begin(WIFI_HOSTNAME)) {
         DEBUG("Error starting mDNS\n");
         return;
     }
 
-    String instance = String(wifi_hostname) + "_" + WiFi.macAddress();
+    String instance = String(WIFI_HOSTNAME) + "_" + WiFi.macAddress();
     instance.replace(":", "");
     MDNS.setInstanceName(instance);
     MDNS.addService("http", "tcp", 80);
@@ -243,17 +240,17 @@ void Webserver::startServices() {
 
     startLittleFS();
 
-    server.on("/", handleRoot);
-    server.on("/generate_204", handleRoot);  // handle Andriod phones doing shit to detect if there is 'real' internet and possibly dropping conn.
-    server.on("/gen_204", handleRoot);
-    server.on("/library/test/success.html", handleRoot);
-    server.on("/hotspot-detect.html", handleRoot);
-    server.on("/connectivity-check.html", handleRoot);
-    server.on("/check_network_status.txt", handleRoot);
-    server.on("/ncsi.txt", handleRoot);
-    server.on("/fwlink", handleRoot);
+    server->on("/", handleRoot);
+    server->on("/generate_204", handleRoot);  // handle Andriod phones doing shit to detect if there is 'real' internet and possibly dropping conn.
+    server->on("/gen_204", handleRoot);
+    server->on("/library/test/success.html", handleRoot);
+    server->on("/hotspot-detect.html", handleRoot);
+    server->on("/connectivity-check.html", handleRoot);
+    server->on("/check_network_status.txt", handleRoot);
+    server->on("/ncsi.txt", handleRoot);
+    server->on("/fwlink", handleRoot);
 
-    server.on("/status", [this](AsyncWebServerRequest *request) {
+    server->on("/status", [this](AsyncWebServerRequest *request) {
         char buf[1024];
         char configBuf[256];
         conf->toJsonString(configBuf);
@@ -288,7 +285,7 @@ Battery Voltage:\t%0.1fv";
         led->on(200);
     });
 
-    server.on("/timer/start", HTTP_POST, [this](AsyncWebServerRequest *request) {
+    server->on("/timer/start", HTTP_POST, [this](AsyncWebServerRequest *request) {
         uint8_t node = 0;
         if (request->hasParam("node", true)) {
             node = request->getParam("node", true)->value().toInt();
@@ -298,7 +295,7 @@ Battery Voltage:\t%0.1fv";
         request->send(200, "application/json", "{\"status\": \"OK\"}");
     });
 
-    server.on("/timer/stop", HTTP_POST, [this](AsyncWebServerRequest *request) {
+    server->on("/timer/stop", HTTP_POST, [this](AsyncWebServerRequest *request) {
         uint8_t node = 0;
         if (request->hasParam("node", true)) {
             node = request->getParam("node", true)->value().toInt();
@@ -308,19 +305,19 @@ Battery Voltage:\t%0.1fv";
         request->send(200, "application/json", "{\"status\": \"OK\"}");
     });
 
-    server.on("/timer/rssiStart", HTTP_POST, [this](AsyncWebServerRequest *request) {
+    server->on("/timer/rssiStart", HTTP_POST, [this](AsyncWebServerRequest *request) {
         sendRssi = true;
         request->send(200, "application/json", "{\"status\": \"OK\"}");
         led->on(200);
     });
 
-    server.on("/timer/rssiStop", HTTP_POST, [this](AsyncWebServerRequest *request) {
+    server->on("/timer/rssiStop", HTTP_POST, [this](AsyncWebServerRequest *request) {
         sendRssi = false;
         request->send(200, "application/json", "{\"status\": \"OK\"}");
         led->on(200);
     });
 
-    server.on("/config", HTTP_GET, [this](AsyncWebServerRequest *request) {
+    server->on("/config", HTTP_GET, [this](AsyncWebServerRequest *request) {
         AsyncResponseStream *response = request->beginResponseStream("application/json");
         conf->toJson(*response);
         request->send(response);
@@ -338,9 +335,9 @@ Battery Voltage:\t%0.1fv";
         led->on(200);
     });
 
-    server.serveStatic("/", LittleFS, "/").setCacheControl("max-age=600");
+    server->serveStatic("/", LittleFS, "/").setCacheControl("max-age=600");
 
-    events.onConnect([this](AsyncEventSourceClient *client) {
+    events->onConnect([this](AsyncEventSourceClient *client) {
         if (client->lastId()) {
             DEBUG("Client reconnected! Last message ID that it got is: %u\n", client->lastId());
         }
@@ -353,18 +350,18 @@ Battery Voltage:\t%0.1fv";
     DefaultHeaders::Instance().addHeader("Access-Control-Allow-Methods", "POST,GET,OPTIONS");
     DefaultHeaders::Instance().addHeader("Access-Control-Allow-Headers", "*");
 
-    server.onNotFound(handleNotFound);
+    server->onNotFound(handleNotFound);
 
-    server.addHandler(&events);
-    server.addHandler(configJsonHandler);
+    server->addHandler(events);
+    server->addHandler(configJsonHandler);
 
     ElegantOTA.setAutoReboot(true);
-    ElegantOTA.begin(&server);
+    ElegantOTA.begin(server);
 
-    server.begin();
+    server->begin();
 
-    dnsServer.start(DNS_PORT, "*", ipAddress);
-    dnsServer.setErrorReplyCode(DNSReplyCode::NoError);
+    dnsServer->start(DNS_PORT, "*", ipAddress);
+    dnsServer->setErrorReplyCode(DNSReplyCode::NoError);
 
     startMDNS();
 

@@ -117,30 +117,27 @@
           <div class="config-item">
             <label for="minLap">Minimum Lap Time:</label>
             <div class="input-with-value">
-              <span class="val">5.0s</span>
-              <input type="range" id="minLap" step="0.5" min="1" max="20" value="5.0" oninput="updateMinLap(this,value)" />
+              <input type="number" id="minLap" step="0.5" min="1" max="20" value="4.0" oninput="updateMinLap(this,value)" /> <span>seconds</span>
             </div>
           </div>
 
           <div class="config-item">
             <label for="raceStartDelay">Race Start Delay:</label>
             <div class="input-with-value">
-              <span class="val">5.0s</span>
-              <input type="range" id="raceStartDelay" step="0.5" min="0" max="15" value="5.0" oninput="updateRaceStartDelay(this,value)" />
+              <input type="number" id="raceStartDelay" step="0.5" min="0" max="15" value="5.0" oninput="updateRaceStartDelay(this,value)" /> <span>seconds</span>
             </div>
           </div>
 
           <div class="config-item">
             <label for="alarmThreshold">Low Battery Alarm:</label>
             <div class="input-with-value">
-              <span class="val">3.6v</span>
-              <input type="range" id="alarmThreshold" step="0.1" min="0.0" max="3.6" oninput="updateAlarmThreshold(this,value)" />
+              <input type="number" id="alarmThreshold" step="0.1" min="2.8" max="4.0" value="3.4" oninput="updateAlarmThreshold(this,value)" /> <span>volts</span>
             </div>
           </div>
 
           <div class="config-item">
             <label for="announcerSelect">Announcer Type:</label>
-            <select id="announcerSelect">
+            <select id="announcerSelect" style="width: auto;">
               <option value="none">None</option>
               <option value="beep">Beep</option>
               <option value="1lap">Lap Time</option>
@@ -152,8 +149,7 @@
           <div class="config-item">
             <label for="rate">Announcer Rate:</label>
             <div class="input-with-value">
-              <span class="val">1.0</span>
-              <input type="range" min="0.1" max="2" step="0.1" id="rate" oninput="updateAnnouncerRate(this,value)" />
+              <input type="number" id="rate" min="0.1" max="2.0" step="0.1" value="1.0" oninput="updateAnnouncerRate(this,value)" /> <span>speed</span>
             </div>
           </div>
 

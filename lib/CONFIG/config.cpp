@@ -46,9 +46,7 @@ void Config::write(void) {
     modified = false;
 }
 
-void Config::toJson(AsyncResponseStream& destination) {
-    // Use https://arduinojson.org/v7/assistant to estimate memory
-    JsonDocument config;
+void Config::populateJsonDocument(JsonDocument& config) {
     config["freq"] = conf.frequency;
     config["minLap"] = conf.minLap;
     config["raceStartDelay"] = conf.raceStartDelay;
@@ -64,26 +62,18 @@ void Config::toJson(AsyncResponseStream& destination) {
     config["name2"] = conf.pilotName2;
     config["ssid"] = conf.ssid;
     config["pwd"] = conf.password;
+}
+
+void Config::toJson(AsyncResponseStream& destination) {
+    // Use https://arduinojson.org/v7/assistant to estimate memory
+    JsonDocument config;
+    populateJsonDocument(config);
     serializeJson(config, destination);
 }
 
 void Config::toJsonString(char* buf) {
     JsonDocument config;
-    config["freq"] = conf.frequency;
-    config["minLap"] = conf.minLap;
-    config["raceStartDelay"] = conf.raceStartDelay;
-    config["alarm"] = conf.alarm;
-    config["anType"] = conf.announcerType;
-    config["anRate"] = conf.announcerRate;
-    config["enterRssi"] = conf.enterRssi;
-    config["exitRssi"] = conf.exitRssi;
-    config["name"] = conf.pilotName;
-    config["freq2"] = conf.frequency2;
-    config["enterRssi2"] = conf.enterRssi2;
-    config["exitRssi2"] = conf.exitRssi2;
-    config["name2"] = conf.pilotName2;
-    config["ssid"] = conf.ssid;
-    config["pwd"] = conf.password;
+    populateJsonDocument(config);
     serializeJsonPretty(config, buf, 512);
 }
 
@@ -200,9 +190,9 @@ void Config::setDefaults(void) {
     memset(&conf, 0, sizeof(conf));
     conf.version = CONFIG_VERSION | CONFIG_MAGIC;
     conf.frequency = 1111;
-    conf.minLap = 50;  // 5 seconds (value * 100ms)
+    conf.minLap = 40;  // 4 seconds (value * 100ms)
     conf.raceStartDelay = 50;  // 5 seconds (value * 100ms)
-    conf.alarm = 36;
+    conf.alarm = 34;  // 3.4v (value / 10)
     conf.announcerType = 2;
     conf.announcerRate = 10;
     conf.enterRssi = 120;

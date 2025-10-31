@@ -116,6 +116,12 @@ main {
   min-width: 50px;
 }
 
+#announcerSelect {
+  flex: 0 0 auto;
+  width: fit-content;
+  max-width: 100%;
+}
+
 .input-with-value {
   display: flex;
   align-items: center;

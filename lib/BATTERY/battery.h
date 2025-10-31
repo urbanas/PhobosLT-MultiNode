@@ -22,6 +22,7 @@ class BatteryMonitor {
    private:
     alarm_state_e state = ALARM_OFF;
     uint16_t measurements[AVERAGING_SIZE];
+    uint16_t averageSum;
     uint8_t measurementIndex;
     uint32_t lastCheckTimeMs;
     uint8_t vbatPin;
