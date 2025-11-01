@@ -15,7 +15,7 @@ class DNSServer;
 
 class Webserver {
    public:
-    void init(Config *config, LapTimer *lapTimer1, LapTimer *lapTimer2, BatteryMonitor *batMonitor, Buzzer *buzzer, Led *l);
+    void init(Config *config, LapTimer *lapTimer1, LapTimer *lapTimer2, LapTimer *lapTimer3, LapTimer *lapTimer4, BatteryMonitor *batMonitor, Buzzer *buzzer, Led *l);
     void handleWebUpdate(uint32_t currentTimeMs);
 
    private:
@@ -26,6 +26,8 @@ class Webserver {
     Config *conf;
     LapTimer *timer1;
     LapTimer *timer2;
+    LapTimer *timer3;
+    LapTimer *timer4;
     BatteryMonitor *monitor;
     Buzzer *buz;
     Led *led;

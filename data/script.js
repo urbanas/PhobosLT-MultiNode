@@ -80,6 +80,62 @@ function initializeNodes() {
       maxRssiValue: 130,
       minRssiValue: 90,
       rssiChart: null,
+    },
+    3: {
+      // DOM element references
+      bandSelect: document.getElementById("bandSelect3"),
+      channelSelect: document.getElementById("channelSelect3"),
+      freqOutput: document.getElementById("freqOutput3"),
+      enterRssiInput: document.getElementById("enter3"),
+      exitRssiInput: document.getElementById("exit3"),
+      enterRssiSpan: document.getElementById("enterSpan3"),
+      exitRssiSpan: document.getElementById("exitSpan3"),
+      pilotNameInput: document.getElementById("pname3"),
+      pilotNameDisplay: document.getElementById("pilot3Name"),
+      lapTable: document.getElementById("lapTable3"),
+      chartCanvas: document.getElementById("rssiChart3"),
+      // State variables
+      enterRssi: 120,
+      exitRssi: 100,
+      frequency: 0,
+      lapNo: -1,
+      lapTimes: [],
+      rssiBuffer: [],
+      rssiValue: 0,
+      crossing: false,
+      rssiSeries: new TimeSeries(),
+      rssiCrossingSeries: new TimeSeries(),
+      maxRssiValue: 130,
+      minRssiValue: 90,
+      rssiChart: null,
+    },
+    4: {
+      // DOM element references
+      bandSelect: document.getElementById("bandSelect4"),
+      channelSelect: document.getElementById("channelSelect4"),
+      freqOutput: document.getElementById("freqOutput4"),
+      enterRssiInput: document.getElementById("enter4"),
+      exitRssiInput: document.getElementById("exit4"),
+      enterRssiSpan: document.getElementById("enterSpan4"),
+      exitRssiSpan: document.getElementById("exitSpan4"),
+      pilotNameInput: document.getElementById("pname4"),
+      pilotNameDisplay: document.getElementById("pilot4Name"),
+      lapTable: document.getElementById("lapTable4"),
+      chartCanvas: document.getElementById("rssiChart4"),
+      // State variables
+      enterRssi: 120,
+      exitRssi: 100,
+      frequency: 0,
+      lapNo: -1,
+      lapTimes: [],
+      rssiBuffer: [],
+      rssiValue: 0,
+      crossing: false,
+      rssiSeries: new TimeSeries(),
+      rssiCrossingSeries: new TimeSeries(),
+      maxRssiValue: 130,
+      minRssiValue: 90,
+      rssiChart: null,
     }
   };
 
@@ -91,6 +147,7 @@ function initializeNodes() {
     minLapInput: document.getElementById("minLap"),
     raceStartDelayInput: document.getElementById("raceStartDelay"),
     alarmThreshold: document.getElementById("alarmThreshold"),
+    activeNodeCountSelect: document.getElementById("activeNodeCount"),
     timer: document.getElementById("timer"),
     startRaceButton: document.getElementById("startRaceButton"),
     stopRaceButton: document.getElementById("stopRaceButton"),
@@ -98,7 +155,6 @@ function initializeNodes() {
     config: document.getElementById("config"),
     race: document.getElementById("race"),
     calib: document.getElementById("calib"),
-    ota: document.getElementById("ota"),
   };
 }
 
@@ -110,7 +166,6 @@ onload = function (e) {
   commonElements.config.style.display = "block";
   commonElements.race.style.display = "none";
   commonElements.calib.style.display = "none";
-  commonElements.ota.style.display = "none";
   
   // Enable voice by default
   enableAudioLoop();
@@ -118,6 +173,118 @@ onload = function (e) {
   loadConfiguration();
   setupEventListeners();
 };
+
+// Update visibility of nodes based on activeNodeCount
+function updateActiveNodeCount(count) {
+  const nodeCount = parseInt(count);
+  
+  // Get all elements with node-3 and node-4 classes
+  const node3Elements = document.querySelectorAll('.node-3');
+  const node4Elements = document.querySelectorAll('.node-4');
+  
+  // Show/hide node 3 elements
+  node3Elements.forEach(el => {
+    if (nodeCount >= 3) {
+      el.classList.add('visible');
+    } else {
+      el.classList.remove('visible');
+    }
+  });
+  
+  // Show/hide node 4 elements
+  node4Elements.forEach(el => {
+    if (nodeCount >= 4) {
+      el.classList.add('visible');
+    } else {
+      el.classList.remove('visible');
+    }
+  });
+  
+  // Handle node 2 visibility (special case for when only 1 node is selected)
+  // Node 2 columns in config table
+  const node2ConfigCells = document.querySelectorAll('.node-config-table tbody td:nth-child(2)');
+  const node2ConfigHeader = document.querySelectorAll('.node-config-table thead th:nth-child(2)');
+  
+  node2ConfigCells.forEach(el => {
+    el.style.display = nodeCount >= 2 ? '' : 'none';
+  });
+  node2ConfigHeader.forEach(el => {
+    el.style.display = nodeCount >= 2 ? '' : 'none';
+  });
+  
+  // Node 2 in race table
+  const node2RaceHeader = document.querySelector('.race-layout-table .pilot-header:nth-child(2)');
+  const node2RaceCell = document.querySelector('.race-layout-table .lap-table-cell:nth-child(2)');
+  if (node2RaceHeader) node2RaceHeader.style.display = nodeCount >= 2 ? '' : 'none';
+  if (node2RaceCell) node2RaceCell.style.display = nodeCount >= 2 ? '' : 'none';
+  
+  // Node 2 calibration section
+  const node2Calib = document.querySelectorAll('.calib-section:nth-of-type(2)');
+  node2Calib.forEach(el => {
+    el.style.display = nodeCount >= 2 ? '' : 'none';
+  });
+  
+  // Dynamically adjust column widths based on node count
+  const configHeaders = document.querySelectorAll('.node-config-table thead th');
+  const configCells = document.querySelectorAll('.node-config-table tbody td');
+  const raceHeaders = document.querySelectorAll('.race-layout-table .pilot-header');
+  const raceCells = document.querySelectorAll('.race-layout-table .lap-table-cell');
+  
+  const widthMap = {
+    1: '100%',
+    2: '50%',
+    3: '33.333%',
+    4: '25%'
+  };
+  
+  const width = widthMap[nodeCount];
+  
+  // Update config table widths
+  configHeaders.forEach((el, index) => {
+    if (index < nodeCount) {
+      el.style.width = width;
+    }
+  });
+  
+  configCells.forEach((el, index) => {
+    const colIndex = (index % 4) + 1; // Which column (1-4)
+    if (colIndex <= nodeCount) {
+      el.style.width = width;
+    }
+  });
+  
+  // Update race table widths
+  raceHeaders.forEach((el, index) => {
+    if (index < nodeCount) {
+      el.style.width = width;
+    }
+  });
+  
+  raceCells.forEach((el, index) => {
+    if (index < nodeCount) {
+      el.style.width = width;
+    }
+  });
+  
+  // Re-create RSSI charts for visible nodes
+  for (let i = 1; i <= 4; i++) {
+    if (i <= nodeCount) {
+      // Use setTimeout to ensure canvas is visible before creating chart
+      setTimeout(() => {
+        if (!nodes[i].rssiChart && nodes[i].chartCanvas) {
+          console.log(`Creating chart for node ${i}`);
+          createRssiChart(i);
+        }
+      }, 100);
+    } else {
+      // Stop chart if it exists
+      if (nodes[i].rssiChart) {
+        nodes[i].rssiChart.stop();
+        nodes[i].rssiChart = null;
+      }
+    }
+  }
+}
 
 // Load configuration from server
 function loadConfiguration() {
@@ -142,6 +309,22 @@ function loadConfiguration() {
         pilotName: config.name2,
       });
       
+      // Configure Node 3
+      configureNode(3, {
+        freq: config.freq3,
+        enterRssi: config.enterRssi3,
+        exitRssi: config.exitRssi3,
+        pilotName: config.name3,
+      });
+      
+      // Configure Node 4
+      configureNode(4, {
+        freq: config.freq4,
+        enterRssi: config.enterRssi4,
+        exitRssi: config.exitRssi4,
+        pilotName: config.name4,
+      });
+      
       // Configure common settings
       commonElements.minLapInput.value = (parseFloat(config.minLap) / 10).toFixed(1);
       
@@ -157,6 +340,11 @@ function loadConfiguration() {
       commonElements.ssidInput.value = config.ssid;
       commonElements.pwdInput.value = config.pwd;
       
+      // Set active node count and update visibility
+      const activeNodeCount = config.activeNodeCount || 2;
+      commonElements.activeNodeCountSelect.value = activeNodeCount;
+      updateActiveNodeCount(activeNodeCount);
+      
       commonElements.stopRaceButton.disabled = true;
       commonElements.startRaceButton.disabled = false;
       clearInterval(timerInterval);
@@ -164,8 +352,11 @@ function loadConfiguration() {
       commonElements.timer.innerHTML = "00:00:00s";
       
       clearLaps();
-      createRssiChart(1);
-      createRssiChart(2);
+      
+      // Create RSSI charts for active nodes
+      for (let i = 1; i <= activeNodeCount; i++) {
+        createRssiChart(i);
+      }
     });
 }
 
@@ -218,7 +409,8 @@ function getBatteryVoltage() {
 function updateRssiCharts() {
   if (commonElements.calib.style.display !== "none") {
     // Charts are visible, update them
-    [1, 2].forEach(nodeId => {
+    const activeNodeCount = parseInt(commonElements.activeNodeCountSelect.value);
+    for (let nodeId = 1; nodeId <= activeNodeCount; nodeId++) {
       const node = nodes[nodeId];
       if (node.rssiChart) {
         node.rssiChart.start();
@@ -257,23 +449,41 @@ function updateRssiCharts() {
         node.rssiChart.options.maxValue = Math.max(node.maxRssiValue, node.enterRssi + 10);
         node.rssiChart.options.minValue = Math.max(0, Math.min(node.minRssiValue, node.exitRssi - 10));
       }
-    });
+    }
   } else {
     // Charts hidden, stop them
-    [1, 2].forEach(nodeId => {
+    const activeNodeCount = parseInt(commonElements.activeNodeCountSelect.value);
+    for (let nodeId = 1; nodeId <= activeNodeCount; nodeId++) {
       const node = nodes[nodeId];
       if (node.rssiChart) {
         node.rssiChart.stop();
       }
       node.maxRssiValue = node.enterRssi + 10;
       node.minRssiValue = node.exitRssi - 10;
-    });
+    }
   }
 }
 
 // Create RSSI chart for a node
 function createRssiChart(nodeId) {
   const node = nodes[nodeId];
+  
+  // Check if canvas exists
+  if (!node.chartCanvas) {
+    console.error(`Canvas for node ${nodeId} not found`);
+    return;
+  }
+  
+  // Stop existing chart if any
+  if (node.rssiChart) {
+    node.rssiChart.stop();
+  }
+  
+  // Force canvas dimensions to ensure it's visible
+  node.chartCanvas.style.width = '100%';
+  node.chartCanvas.style.height = '250px';
+  node.chartCanvas.width = node.chartCanvas.offsetWidth || 800;
+  node.chartCanvas.height = 250;
   
   node.rssiChart = new SmoothieChart({
     responsive: true,
@@ -287,8 +497,8 @@ function createRssiChart(nodeId) {
     labels: {
       precision: 0,
     },
-    maxValue: 1,
-    minValue: 0,
+    maxValue: node.maxRssiValue,
+    minValue: node.minRssiValue,
   });
   
   node.rssiChart.addTimeSeries(node.rssiSeries, {
@@ -325,24 +535,49 @@ function openTab(evt, tabName) {
   evt.currentTarget.className += " active";
   
   // Handle RSSI streaming for calibration tab
-  if (tabName === "calib" && !rssiSending) {
-    fetch("/timer/rssiStart", {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-    })
-      .then((response) => {
-        if (response.ok) rssiSending = true;
-        return response.json();
+  if (tabName === "calib") {
+    // Create charts for all active nodes when opening calibration tab
+    const activeNodeCount = parseInt(commonElements.activeNodeCountSelect.value);
+    
+    // Longer delay to ensure DOM is fully updated
+    setTimeout(() => {
+      for (let i = 1; i <= 4; i++) {
+        // Always try to create/recreate charts for active nodes
+        if (i <= activeNodeCount) {
+          if (nodes[i].chartCanvas) {
+            // Stop existing chart
+            if (nodes[i].rssiChart) {
+              nodes[i].rssiChart.stop();
+              nodes[i].rssiChart = null;
+            }
+            createRssiChart(i);
+          } else {
+            console.error(`Node ${i} canvas element not found!`);
+          }
+        } else {
+          // Stop charts for inactive nodes
+          if (nodes[i].rssiChart) {
+            nodes[i].rssiChart.stop();
+            nodes[i].rssiChart = null;
+          }
+        }
+      }
+    }, 250); // Increased delay
+    
+    if (!rssiSending) {
+      fetch("/timer/rssiStart", {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
       })
-      .then((response) => {
-        console.log("/timer/rssiStart:", JSON.stringify(response));
-        [1, 2].forEach(nodeId => {
-          if (nodes[nodeId].rssiChart) nodes[nodeId].rssiChart.start();
-        });
-      });
+        .then((response) => {
+          if (response.ok) rssiSending = true;
+          return response.json();
+        })
+        .catch((error) => console.error("Error starting RSSI:", error));
+    }
   } else if (rssiSending) {
     fetch("/timer/rssiStop", {
       method: "POST",
@@ -401,8 +636,33 @@ function updateExitRssi2(obj, value) {
   updateExitRssiForNode(2, value);
 }
 
+function updateEnterRssi3(obj, value) {
+  updateEnterRssiForNode(3, value);
+}
+
+function updateExitRssi3(obj, value) {
+  updateExitRssiForNode(3, value);
+}
+
+function updateEnterRssi4(obj, value) {
+  updateEnterRssiForNode(4, value);
+}
+
+function updateExitRssi4(obj, value) {
+  updateExitRssiForNode(4, value);
+}
+
 // Configuration management
 function saveConfig() {
+  const saveButton = event.target;
+  const originalText = saveButton.textContent;
+  const originalColor = saveButton.style.backgroundColor;
+  
+  // Show saving state
+  saveButton.textContent = "Saving...";
+  saveButton.disabled = true;
+  saveButton.style.backgroundColor = "#FFA500";
+  
   fetch("/config", {
     method: "POST",
     headers: {
@@ -423,12 +683,48 @@ function saveConfig() {
       enterRssi2: nodes[2].enterRssi,
       exitRssi2: nodes[2].exitRssi,
       name2: nodes[2].pilotNameInput.value,
+      freq3: nodes[3].frequency,
+      enterRssi3: nodes[3].enterRssi,
+      exitRssi3: nodes[3].exitRssi,
+      name3: nodes[3].pilotNameInput.value,
+      freq4: nodes[4].frequency,
+      enterRssi4: nodes[4].enterRssi,
+      exitRssi4: nodes[4].exitRssi,
+      name4: nodes[4].pilotNameInput.value,
+      activeNodeCount: parseInt(commonElements.activeNodeCountSelect.value),
       ssid: commonElements.ssidInput.value,
       pwd: commonElements.pwdInput.value,
     }),
   })
     .then((response) => response.json())
-    .then((response) => console.log("/config:", JSON.stringify(response)));
+    .then((response) => {
+      console.log("/config:", JSON.stringify(response));
+      
+      // Show success state
+      saveButton.textContent = "Saved ✓";
+      saveButton.style.backgroundColor = "#4CAF50";
+      
+      // Restore original state after 2 seconds
+      setTimeout(() => {
+        saveButton.textContent = originalText;
+        saveButton.style.backgroundColor = originalColor;
+        saveButton.disabled = false;
+      }, 2000);
+    })
+    .catch((error) => {
+      console.error("Save error:", error);
+      
+      // Show error state
+      saveButton.textContent = "Error ✗";
+      saveButton.style.backgroundColor = "#f44336";
+      
+      // Restore original state after 2 seconds
+      setTimeout(() => {
+        saveButton.textContent = originalText;
+        saveButton.style.backgroundColor = originalColor;
+        saveButton.disabled = false;
+      }, 2000);
+    });
 }
 
 // Frequency management
@@ -447,6 +743,7 @@ function setBandChannelIndex(freq, nodeId) {
       if (freqLookup[i][j] == freq) {
         node.bandSelect.selectedIndex = i;
         node.channelSelect.selectedIndex = j;
+        populateFreqOutput(nodeId); // Update the frequency display
         return;
       }
     }
@@ -490,6 +787,7 @@ function queueSpeak(obj) {
 
 async function enableAudioLoop() {
   audioEnabled = true;
+  updateVoiceButtonState();
   while(audioEnabled) {
     if (speakObjsQueue.length > 0) {
       let isSpeakingFlag = $().articulate('isSpeaking');
@@ -504,6 +802,23 @@ async function enableAudioLoop() {
 
 function disableAudioLoop() {
   audioEnabled = false;
+  updateVoiceButtonState();
+}
+
+function toggleVoice() {
+  if (audioEnabled) {
+    disableAudioLoop();
+  } else {
+    enableAudioLoop();
+  }
+}
+
+function updateVoiceButtonState() {
+  const toggleButton = document.getElementById("ToggleVoiceButton");
+  if (toggleButton) {
+    toggleButton.textContent = audioEnabled ? "Voice: ON" : "Voice: OFF";
+    toggleButton.style.backgroundColor = audioEnabled ? "#4CAF50" : "#f44336";
+  }
 }
 
 function generateAudio() {
@@ -651,20 +966,26 @@ async function startRace(node = 0) {
     commonElements.startRaceButton.disabled = true;
     
     if (raceStartDelay > 0) {
-      // Calculate time taken to say starting phrase
-      const baseWordsPerMinute = 150;
-      let baseWordsPerSecond = baseWordsPerMinute / 60;
-      let wordsPerSecond = baseWordsPerSecond * announcerRate;
-      // 3 words in "Arm your quad"
-      let timeToSpeak1 = 3 / wordsPerSecond * 1000; 
-      queueSpeak("<p>Arm your quad</p>");
-      await new Promise((r) => setTimeout(r, timeToSpeak1));
-      // 8 words in "Starting on the tone in less than five"
-      let timeToSpeak2 = 8 / wordsPerSecond * 1000; 
-      queueSpeak("<p>Starting on the tone in less than five</p>");
-      // Use configured delay time (in ms) plus time taken to make previous announcement
-      let delayTime = (raceStartDelay * 1000) + timeToSpeak2;
-      await new Promise((r) => setTimeout(r, delayTime));
+      // Check if voice is enabled
+      if (audioEnabled) {
+        // Calculate time taken to say starting phrase
+        const baseWordsPerMinute = 150;
+        let baseWordsPerSecond = baseWordsPerMinute / 60;
+        let wordsPerSecond = baseWordsPerSecond * announcerRate;
+        
+        // 3 words in "Arm your quad"
+        let timeToSpeak1 = 3 / wordsPerSecond * 1000; 
+        queueSpeak("<p>Arm your quad</p>");
+        await new Promise((r) => setTimeout(r, timeToSpeak1));
+        
+        // 8 words in "Starting on the tone in [delay] seconds"
+        let timeToSpeak2 = 8 / wordsPerSecond * 1000; 
+        queueSpeak(`<p>Starting on the tone in ${raceStartDelay.toFixed(1)} seconds</p>`);
+        await new Promise((r) => setTimeout(r, timeToSpeak2));
+      }
+      
+      // Wait for configured delay
+      await new Promise((r) => setTimeout(r, raceStartDelay * 1000));
       beep(1, 1, "square"); // needed for some reason to make sure we fire the first beep
       beep(500, 880, "square");
     }

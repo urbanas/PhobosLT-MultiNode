@@ -15,7 +15,7 @@ static const char *WIFI_AP_SSID_PREFIX = "PhobosLT";
 static const char *WIFI_AP_PASSWORD = "phoboslt";
 static const char *WIFI_AP_ADDRESS = "20.0.0.1";
 
-void Webserver::init(Config *config, LapTimer *lapTimer1, LapTimer *lapTimer2, BatteryMonitor *batMonitor, Buzzer *buzzer, Led *l) {
+void Webserver::init(Config *config, LapTimer *lapTimer1, LapTimer *lapTimer2, LapTimer *lapTimer3, LapTimer *lapTimer4, BatteryMonitor *batMonitor, Buzzer *buzzer, Led *l) {
 
     // Initialize network objects
     netMsk = IPAddress(255, 255, 255, 0);
@@ -27,6 +27,8 @@ void Webserver::init(Config *config, LapTimer *lapTimer1, LapTimer *lapTimer2, B
     conf = config;
     timer1 = lapTimer1;
     timer2 = lapTimer2;
+    timer3 = lapTimer3;
+    timer4 = lapTimer4;
     monitor = batMonitor;
     buz = buzzer;
     led = l;
@@ -64,16 +66,27 @@ void Webserver::sendLaptimeEvent(uint32_t lapTime, uint8_t node) {
 }
 
 void Webserver::handleWebUpdate(uint32_t currentTimeMs) {
+    // Check for new laps on all nodes
     if (timer1->isLapAvailable()) {
         sendLaptimeEvent(timer1->getLapTime(), 1);
     }
     if (timer2->isLapAvailable()) {
         sendLaptimeEvent(timer2->getLapTime(), 2);
     }
+    if (timer3->isLapAvailable()) {
+        sendLaptimeEvent(timer3->getLapTime(), 3);
+    }
+    if (timer4->isLapAvailable()) {
+        sendLaptimeEvent(timer4->getLapTime(), 4);
+    }
 
+    // Send RSSI updates for all nodes
     if (sendRssi && ((currentTimeMs - rssiSentMs) > WEB_RSSI_SEND_TIMEOUT_MS)) {
-        sendRssiEvent(timer1->getRssi(), 1);
-        sendRssiEvent(timer2->getRssi(), 2);
+        uint8_t activeNodes = conf->getActiveNodeCount();
+        if (activeNodes >= 1) sendRssiEvent(timer1->getRssi(), 1);
+        if (activeNodes >= 2) sendRssiEvent(timer2->getRssi(), 2);
+        if (activeNodes >= 3) sendRssiEvent(timer3->getRssi(), 3);
+        if (activeNodes >= 4) sendRssiEvent(timer4->getRssi(), 4);
         rssiSentMs = currentTimeMs;
     }
 
@@ -290,8 +303,11 @@ Battery Voltage:\t%0.1fv";
         if (request->hasParam("node", true)) {
             node = request->getParam("node", true)->value().toInt();
         }
+        uint8_t activeNodes = conf->getActiveNodeCount();
         if (node == 0 || node == 1) timer1->start();
-        if (node == 0 || node == 2) timer2->start();
+        if ((node == 0 && activeNodes >= 2) || node == 2) timer2->start();
+        if ((node == 0 && activeNodes >= 3) || node == 3) timer3->start();
+        if ((node == 0 && activeNodes >= 4) || node == 4) timer4->start();
         request->send(200, "application/json", "{\"status\": \"OK\"}");
     });
 
@@ -300,8 +316,11 @@ Battery Voltage:\t%0.1fv";
         if (request->hasParam("node", true)) {
             node = request->getParam("node", true)->value().toInt();
         }
+        uint8_t activeNodes = conf->getActiveNodeCount();
         if (node == 0 || node == 1) timer1->stop();
-        if (node == 0 || node == 2) timer2->stop();
+        if ((node == 0 && activeNodes >= 2) || node == 2) timer2->stop();
+        if ((node == 0 && activeNodes >= 3) || node == 3) timer3->stop();
+        if ((node == 0 && activeNodes >= 4) || node == 4) timer4->stop();
         request->send(200, "application/json", "{\"status\": \"OK\"}");
     });
 

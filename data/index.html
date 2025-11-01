@@ -23,7 +23,6 @@
         <li><a id="nav-link-config" class="tablinks active" onclick="openTab(event, 'config')">Configuration</a></li>
         <li><a id="nav-link-race" class="tablinks" onclick="openTab(event, 'race')">Race</a></li>
         <li><a id="nav-link-calib" class="tablinks" onclick="openTab(event, 'calib')">Calibration</a></li>
-        <li><a id="nav-link-ota" class="tablinks" onclick="openTab(event, 'ota')">Update</a></li>
       </ul>
     </header>
 
@@ -34,8 +33,10 @@
           <table class="node-config-table">
             <thead>
               <tr>
-                <th>Node 1</th>
-                <th>Node 2</th>
+                <th class="node-header">Node 1</th>
+                <th class="node-header">Node 2</th>
+                <th class="node-header node-3">Node 3</th>
+                <th class="node-header node-4">Node 4</th>
               </tr>
             </thead>
             <tbody>
@@ -54,6 +55,28 @@
                 <td>
                   <label for="bandSelect2">Band:</label>
                   <select id="bandSelect2">
+                    <option value="A">A</option>
+                    <option value="B">B</option>
+                    <option value="E">E</option>
+                    <option value="F">F</option>
+                    <option value="R">R</option>
+                    <option value="L">L</option>
+                  </select>
+                </td>
+                <td class="node-3">
+                  <label for="bandSelect3">Band:</label>
+                  <select id="bandSelect3">
+                    <option value="A">A</option>
+                    <option value="B">B</option>
+                    <option value="E">E</option>
+                    <option value="F">F</option>
+                    <option value="R">R</option>
+                    <option value="L">L</option>
+                  </select>
+                </td>
+                <td class="node-4">
+                  <label for="bandSelect4">Band:</label>
+                  <select id="bandSelect4">
                     <option value="A">A</option>
                     <option value="B">B</option>
                     <option value="E">E</option>
@@ -90,6 +113,32 @@
                     <option value="8">8</option>
                   </select>
                 </td>
+                <td class="node-3">
+                  <label for="channelSelect3">Channel:</label>
+                  <select id="channelSelect3">
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
+                  </select>
+                </td>
+                <td class="node-4">
+                  <label for="channelSelect4">Channel:</label>
+                  <select id="channelSelect4">
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
+                  </select>
+                </td>
               </tr>
               <tr>
                 <td>
@@ -100,6 +149,14 @@
                   <label for="pname2">Pilot Name:</label>
                   <input type="text" id="pname2" maxlength="20" placeholder="Pilot 2" />
                 </td>
+                <td class="node-3">
+                  <label for="pname3">Pilot Name:</label>
+                  <input type="text" id="pname3" maxlength="20" placeholder="Pilot 3" />
+                </td>
+                <td class="node-4">
+                  <label for="pname4">Pilot Name:</label>
+                  <input type="text" id="pname4" maxlength="20" placeholder="Pilot 4" />
+                </td>
               </tr>
               <tr>
                 <td>
@@ -108,11 +165,27 @@
                 <td>
                   <span id="freqOutput2" class="freq-display"></span>
                 </td>
+                <td class="node-3">
+                  <span id="freqOutput3" class="freq-display"></span>
+                </td>
+                <td class="node-4">
+                  <span id="freqOutput4" class="freq-display"></span>
+                </td>
               </tr>
             </tbody>
           </table>
 
           <h3>General Settings</h3>
+
+          <div class="config-item">
+            <label for="activeNodeCount">Active Nodes:</label>
+            <select id="activeNodeCount" onchange="updateActiveNodeCount(this.value)">
+              <option value="1">1 Node</option>
+              <option value="2" selected>2 Nodes</option>
+              <option value="3">3 Nodes</option>
+              <option value="4">4 Nodes</option>
+            </select>
+          </div>
 
           <div class="config-item">
             <label for="minLap">Minimum Lap Time:</label>
@@ -137,7 +210,7 @@
 
           <div class="config-item">
             <label for="announcerSelect">Announcer Type:</label>
-            <select id="announcerSelect" style="width: auto;">
+            <select id="announcerSelect">
               <option value="none">None</option>
               <option value="beep">Beep</option>
               <option value="1lap">Lap Time</option>
@@ -168,8 +241,7 @@
             <input type="password" id="pwd" maxlength="32" />
           </div>
         </div>
-        <button id="EnableAudioButton" onclick="enableAudioLoop()">Enable voice</button>
-        <button id="DisableAudioButton" onclick="disableAudioLoop()">Disable voice</button>
+        <button id="ToggleVoiceButton" onclick="toggleVoice()">Voice: ON</button>
         <button id="GenerateAudioButton" onclick="generateAudio()">Test voice</button>
         <br>
         <button onclick="saveConfig()">Save Configuration</button>
@@ -202,6 +274,20 @@
                   <button onclick="stopRace(2)">Stop</button>
                 </div>
               </th>
+              <th class="pilot-header node-3">
+                <span id="pilot3Name">Pilot 3</span> (Node 3)
+                <div class="node-controls">
+                  <button onclick="startRace(3)">Start</button>
+                  <button onclick="stopRace(3)">Stop</button>
+                </div>
+              </th>
+              <th class="pilot-header node-4">
+                <span id="pilot4Name">Pilot 4</span> (Node 4)
+                <div class="node-controls">
+                  <button onclick="startRace(4)">Start</button>
+                  <button onclick="stopRace(4)">Stop</button>
+                </div>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -224,6 +310,24 @@
                   </tr>
                 </table>
               </td>
+              <td class="lap-table-cell node-3">
+                <table id="lapTable3" class="lap-times-table">
+                  <tr>
+                    <th>Lap</th>
+                    <th>Time</th>
+                    <th>3-Lap</th>
+                  </tr>
+                </table>
+              </td>
+              <td class="lap-table-cell node-4">
+                <table id="lapTable4" class="lap-times-table">
+                  <tr>
+                    <th>Lap</th>
+                    <th>Time</th>
+                    <th>3-Lap</th>
+                  </tr>
+                </table>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -233,7 +337,7 @@
         <div class="calib-section">
           <h3>Node 1 - RSSI Calibration</h3>
           <div class="chart-container">
-            <canvas id="rssiChart"></canvas>
+            <canvas id="rssiChart" width="800" height="250"></canvas>
           </div>
           <div class="config-item">
             <label for="enter">Enter RSSI:</label>
@@ -254,7 +358,7 @@
         <div class="calib-section">
           <h3>Node 2 - RSSI Calibration</h3>
           <div class="chart-container">
-            <canvas id="rssiChart2"></canvas>
+            <canvas id="rssiChart2" width="800" height="250"></canvas>
           </div>
           <div class="config-item">
             <label for="enter2">Enter RSSI:</label>
@@ -272,13 +376,49 @@
           </div>
         </div>
         
-        <button onclick="saveConfig()">Save RSSI Thresholds</button>
-      </div>
-
-      <div id="ota" class="tabcontent">
-        <div class="firmware-update">
-            <iframe src="http://20.0.0.1/update" width="100%" height="600px" frameborder="0"></iframe>
+        <div class="calib-section node-3">
+          <h3>Node 3 - RSSI Calibration</h3>
+          <div class="chart-container">
+            <canvas id="rssiChart3" width="800" height="250"></canvas>
+          </div>
+          <div class="config-item">
+            <label for="enter3">Enter RSSI:</label>
+            <div class="input-with-value">
+              <span id="enterSpan3" class="val">120</span>
+              <input type="range" min="50" max="255" step="1" id="enter3" value="120" oninput="updateEnterRssi3(this,value)" />
+            </div>
+          </div>
+          <div class="config-item">
+            <label for="exit3">Exit RSSI:</label>
+            <div class="input-with-value">
+              <span id="exitSpan3" class="val">100</span>
+              <input type="range" min="50" max="255" step="1" id="exit3" value="100" oninput="updateExitRssi3(this,value)" />
+            </div>
+          </div>
         </div>
+        
+        <div class="calib-section node-4">
+          <h3>Node 4 - RSSI Calibration</h3>
+          <div class="chart-container">
+            <canvas id="rssiChart4" width="800" height="250"></canvas>
+          </div>
+          <div class="config-item">
+            <label for="enter4">Enter RSSI:</label>
+            <div class="input-with-value">
+              <span id="enterSpan4" class="val">120</span>
+              <input type="range" min="50" max="255" step="1" id="enter4" value="120" oninput="updateEnterRssi4(this,value)" />
+            </div>
+          </div>
+          <div class="config-item">
+            <label for="exit4">Exit RSSI:</label>
+            <div class="input-with-value">
+              <span id="exitSpan4" class="val">100</span>
+              <input type="range" min="50" max="255" step="1" id="exit4" value="100" oninput="updateExitRssi4(this,value)" />
+            </div>
+          </div>
+        </div>
+        
+        <button onclick="saveConfig()">Save RSSI Thresholds</button>
       </div>
     </main>
 

@@ -33,6 +33,14 @@
 #define PIN_RX5808_2_DATA 8
 #define PIN_RX5808_2_SELECT 9
 #define PIN_RX5808_2_CLOCK 10
+#define PIN_RX5808_3_RSSI 20
+#define PIN_RX5808_3_DATA 6   // Shared DATA with Node 1 & 2
+#define PIN_RX5808_3_SELECT 21
+#define PIN_RX5808_3_CLOCK 4  // Shared CLOCK with Node 1 & 2
+#define PIN_RX5808_4_RSSI 19
+#define PIN_RX5808_4_DATA 6   // Shared DATA with Node 1, 2 & 3
+#define PIN_RX5808_4_SELECT 18
+#define PIN_RX5808_4_CLOCK 4  // Shared CLOCK with Node 1, 2 & 3
 #define PIN_BUZZER 5
 #define BUZZER_INVERTED false
 
@@ -51,6 +59,14 @@
 #define PIN_RX5808_2_DATA 5
 #define PIN_RX5808_2_SELECT 6
 #define PIN_RX5808_2_CLOCK 7
+#define PIN_RX5808_3_RSSI 8
+#define PIN_RX5808_3_DATA 11  // Shared DATA with Node 1 & 2
+#define PIN_RX5808_3_SELECT 9
+#define PIN_RX5808_3_CLOCK 12 // Shared CLOCK with Node 1 & 2
+#define PIN_RX5808_4_RSSI 14
+#define PIN_RX5808_4_DATA 11  // Shared DATA with Node 1, 2 & 3
+#define PIN_RX5808_4_SELECT 15
+#define PIN_RX5808_4_CLOCK 12 // Shared CLOCK with Node 1, 2 & 3
 #define PIN_BUZZER 3
 #define BUZZER_INVERTED false
 
@@ -69,6 +85,14 @@
 #define PIN_RX5808_2_DATA 25
 #define PIN_RX5808_2_SELECT 26
 #define PIN_RX5808_2_CLOCK 14
+#define PIN_RX5808_3_RSSI 34
+#define PIN_RX5808_3_DATA 19  // Shared DATA with Node 1 & 2
+#define PIN_RX5808_3_SELECT 18
+#define PIN_RX5808_3_CLOCK 23 // Shared CLOCK with Node 1 & 2
+#define PIN_RX5808_4_RSSI 36
+#define PIN_RX5808_4_DATA 19  // Shared DATA with Node 1, 2 & 3
+#define PIN_RX5808_4_SELECT 17
+#define PIN_RX5808_4_CLOCK 23 // Shared CLOCK with Node 1, 2 & 3
 #define PIN_BUZZER 27
 #define BUZZER_INVERTED false
 
@@ -96,6 +120,15 @@ typedef struct {
     uint8_t enterRssi2;
     uint8_t exitRssi2;
     char pilotName2[21];
+    uint16_t frequency3;
+    uint8_t enterRssi3;
+    uint8_t exitRssi3;
+    char pilotName3[21];
+    uint16_t frequency4;
+    uint8_t enterRssi4;
+    uint8_t exitRssi4;
+    char pilotName4[21];
+    uint8_t activeNodeCount;  // Number of active nodes (1-4)
     char ssid[33];
     char password[33];
 } laptimer_config_t;
@@ -113,6 +146,8 @@ class Config {
     // getters and setters
     uint16_t getFrequency();
     uint16_t getFrequency2();
+    uint16_t getFrequency3();
+    uint16_t getFrequency4();
     uint32_t getMinLapMs();
     uint32_t getRaceStartDelayMs();
     uint8_t getAlarmThreshold();
@@ -120,6 +155,11 @@ class Config {
     uint8_t getExitRssi();
     uint8_t getEnterRssi2();
     uint8_t getExitRssi2();
+    uint8_t getEnterRssi3();
+    uint8_t getExitRssi3();
+    uint8_t getEnterRssi4();
+    uint8_t getExitRssi4();
+    uint8_t getActiveNodeCount();
     char* getSsid();
     char* getPassword();
 

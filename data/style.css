@@ -106,20 +106,52 @@ main {
 }
 
 .config-item input[type="text"],
-.config-item input[type="password"],
-.config-item select,
-.input-with-value {
+.config-item input[type="password"] {
   flex: 1;
+  max-width: 300px;
+}
+
+.config-item input[type="number"] {
+  flex: 0 1 auto;
+  max-width: 120px;
+}
+
+.config-item select {
+  flex: 0 1 auto;
+}
+
+.input-with-value {
+  flex: 0 1 auto;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Touch-friendly inputs */
+.config-item input[type="text"],
+.config-item input[type="password"],
+.config-item input[type="number"] {
+  min-height: 44px;
+  padding: 8px 12px;
+  font-size: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
 }
 
 .config-item select {
   min-width: 50px;
+  min-height: 44px;
+  padding: 8px 12px;
+  font-size: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
 }
 
+/* Make announcer select only as wide as its content */
 #announcerSelect {
-  flex: 0 0 auto;
-  width: fit-content;
-  max-width: 100%;
+  flex: 0 1 auto;
+  width: auto;
+  min-width: fit-content;
 }
 
 .input-with-value {
@@ -143,19 +175,25 @@ main {
 
 button {
   margin: 12px 0;
-  padding: 8px 12px;
+  padding: 12px 16px;
+  min-height: 44px;
   background-color: var(--primary-color);
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: background-color 0.3s, transform 0.1s;
   font-size: 16px;
   font-weight: bold;
+  touch-action: manipulation;
 }
 
 button:hover {
   background-color: var(--primary-color-dark);
+}
+
+button:active {
+  transform: scale(0.98);
 }
 
 .racebuttons {
@@ -205,36 +243,141 @@ footer {
 }
 
 @media (max-width: 768px) {
+  /* Prevent horizontal overflow */
+  body {
+    overflow-x: hidden;
+  }
+
+  main {
+    padding: 0 4px;
+  }
+
+  .tabcontent {
+    padding: 12px;
+  }
+
+  /* Larger text for readability */
+  body {
+    font-size: 16px;
+  }
+
   nav {
       flex-direction: column;
   }
 
+  /* Make header more compact */
+  header {
+    padding: 12px;
+  }
+
+  .logo h1 {
+    font-size: 24px;
+    margin-left: 12px;
+  }
+
   .nav-links {
-      margin-top: 16px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+  }
+
+  .nav-links a {
+    padding: 12px 16px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
   }
 
   .nav-links li {
-      margin: 8px 0;
+      margin: 4px 0;
   }
 
+  /* Configuration items stack vertically */
   .config-item {
       flex-direction: column;
       align-items: stretch;
+      gap: 8px;
+      margin-bottom: 16px;
   }
 
   .config-item label {
       flex: 0 0 auto;
-      margin-bottom: 8px;
+      margin-bottom: 4px;
+      font-size: 16px;
+      min-width: auto;
+  }
+
+  /* Make inputs full width and touch-friendly on mobile */
+  .config-item input[type="text"],
+  .config-item input[type="password"],
+  .config-item input[type="number"],
+  .config-item select {
+    width: 100%;
+    min-height: 48px;
+    font-size: 16px;
+    padding: 12px;
+  }
+
+  /* Number inputs - make spinner buttons larger */
+  .config-item input[type="number"] {
+    -webkit-appearance: none;
+    -moz-appearance: textfield;
+  }
+
+  .config-item input[type="number"]::-webkit-inner-spin-button,
+  .config-item input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: inner-spin-button;
+    height: 48px;
+    opacity: 1;
+  }
+
+  /* Announcer select full width on mobile */
+  #announcerSelect {
+    width: 100% !important;
+    flex: 1 1 auto;
   }
 
   .input-with-value {
-      flex-direction: column;
-      align-items: stretch;
+      flex-direction: row;
+      align-items: center;
+      gap: 12px;
+  }
+
+  .input-with-value input[type="number"] {
+    flex: 1;
+  }
+
+  .input-with-value span {
+    flex-shrink: 0;
+    font-size: 16px;
+    min-width: 60px;
   }
 
   .input-with-value .val {
       text-align: left;
-      margin-top: 8px;
+      font-size: 18px;
+      font-weight: bold;
+      min-width: 50px;
+  }
+
+  /* Make buttons larger and full width */
+  button {
+    min-height: 48px;
+    padding: 14px 20px;
+    font-size: 18px;
+    width: 100%;
+    margin: 8px 0;
+  }
+
+  /* Voice control buttons - stack vertically */
+  #ToggleVoiceButton,
+  #GenerateAudioButton {
+    display: block;
+    width: 100%;
+    margin: 8px 0;
   }
 
   table {
@@ -243,38 +386,107 @@ footer {
 
   table th,
   table td {
-      padding: 6px;
+      padding: 8px;
   }
 
-  /* Stack node config table vertically on mobile */
-  .node-config-table thead th {
-      display: block;
-      width: 100%;
-      font-size: 16px;
+  /* FIXED: Group node config by pilot, not by setting type */
+  .node-config-table {
+    display: block;
+  }
+
+  .node-config-table thead {
+    display: none; /* Hide the original headers on mobile */
+  }
+
+  .node-config-table tbody {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
   }
 
   .node-config-table tbody tr {
-      display: block;
-      margin-bottom: 16px;
+    display: contents;
+  }
+
+  /* Node 1 items come first (rows 1-4) */
+  .node-config-table tbody tr:nth-child(1) td:first-child { order: 1; }
+  .node-config-table tbody tr:nth-child(2) td:first-child { order: 2; }
+  .node-config-table tbody tr:nth-child(3) td:first-child { order: 3; }
+  .node-config-table tbody tr:nth-child(4) td:first-child { order: 4; }
+
+  /* Node 2 items come after (rows 5-8) */
+  .node-config-table tbody tr:nth-child(1) td:last-child { order: 5; }
+  .node-config-table tbody tr:nth-child(2) td:last-child { order: 6; }
+  .node-config-table tbody tr:nth-child(3) td:last-child { order: 7; }
+  .node-config-table tbody tr:nth-child(4) td:last-child { order: 8; }
+
+  /* Add "Node 1" header before first Node 1 setting */
+  .node-config-table tbody tr:nth-child(1) td:first-child::before {
+    content: 'Node 1';
+    display: block;
+    background-color: var(--primary-color);
+    color: white;
+    padding: 12px;
+    text-align: center;
+    font-size: 18px;
+    font-weight: bold;
+    border-radius: 4px;
+    margin: -12px -12px 16px -12px;
+  }
+
+  /* Add "Node 2" header before first Node 2 setting */
+  .node-config-table tbody tr:nth-child(1) td:last-child {
+    margin-top: 24px;
+  }
+
+  .node-config-table tbody tr:nth-child(1) td:last-child::before {
+    content: 'Node 2';
+    display: block;
+    background-color: var(--primary-color);
+    color: white;
+    padding: 12px;
+    text-align: center;
+    font-size: 18px;
+    font-weight: bold;
+    border-radius: 4px;
+    margin: -12px -12px 16px -12px;
   }
 
   .node-config-table tbody td {
-      display: block;
-      width: 100% !important;
-      max-width: 100%;
-      margin-bottom: 16px;
-      border-bottom: 2px solid var(--primary-color);
+    display: block;
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border-color);
   }
 
-  .node-config-table tbody td:last-child {
-      margin-bottom: 0;
+  .node-config-table label {
+    font-size: 16px;
+    margin-bottom: 8px;
+  }
+
+  .node-config-table select,
+  .node-config-table input[type="text"] {
+    width: 100%;
+    min-height: 48px;
+    padding: 12px;
+    font-size: 16px;
+  }
+
+  .node-config-table .freq-display {
+    font-size: 18px;
+    padding: 12px;
   }
 
   /* Stack race layout table vertically on mobile */
   .race-layout-table thead th.pilot-header {
       display: block;
       width: 100%;
-      margin-bottom: 8px;
+      margin-bottom: 12px;
+      padding: 16px;
+  }
+
+  .pilot-header span {
+    font-size: 20px;
   }
 
   .race-layout-table tbody tr {
@@ -284,31 +496,135 @@ footer {
   .race-layout-table tbody td.lap-table-cell {
       display: block;
       width: 100% !important;
-      margin-bottom: 16px;
+      margin-bottom: 20px;
+      padding: 16px;
   }
 
   /* Adjust race header for mobile */
+  .race-header {
+    margin-bottom: 16px;
+  }
+
   .race-header #timer {
-      font-size: 24px;
+      font-size: 32px;
+      margin-bottom: 16px;
   }
 
   .racebuttons {
       flex-direction: column;
-      gap: 8px;
+      gap: 12px;
   }
 
   .racebuttons button {
       width: 100%;
+      min-height: 48px;
+  }
+
+  .node-controls {
+    gap: 12px;
+    margin-top: 12px;
+  }
+
+  .node-controls button {
+      flex: 1;
+      min-height: 48px;
+      max-width: none;
+      font-size: 16px;
+      padding: 12px;
   }
 
   /* Adjust calibration sections for mobile */
   .calib-section {
-      padding: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+  }
+
+  .calib-section h3 {
+    font-size: 18px;
+    margin-bottom: 16px;
+  }
+
+  /* Make range sliders more touch-friendly */
+  .calib-section input[type="range"] {
+    min-height: 48px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+  }
+
+  .calib-section input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    cursor: pointer;
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  }
+
+  .calib-section input[type="range"]::-moz-range-thumb {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    cursor: pointer;
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  }
+
+  .calib-section input[type="range"]::-webkit-slider-runnable-track {
+    height: 8px;
+    background: var(--border-color);
+    border-radius: 4px;
+  }
+
+  .calib-section input[type="range"]::-moz-range-track {
+    height: 8px;
+    background: var(--border-color);
+    border-radius: 4px;
+  }
+
+  .calib-section .input-with-value .val {
+    font-size: 20px;
+    min-width: 60px;
   }
 
   #rssiChart,
   #rssiChart2 {
-      height: 200px;
+      height: 250px;
+  }
+
+  /* Improve lap times table readability */
+  .lap-times-table {
+    font-size: 15px;
+  }
+
+  .lap-times-table th {
+    font-size: 15px;
+    padding: 10px;
+  }
+
+  .lap-times-table td {
+    font-size: 15px;
+    padding: 10px;
+  }
+
+  /* Footer */
+  footer {
+    font-size: 14px;
+    padding: 16px 12px;
+  }
+
+  /* Add spacing between config sections */
+  .config-container {
+    gap: 20px;
+  }
+
+  .config-container h3 {
+    font-size: 20px;
+    margin-bottom: 16px;
   }
 }
 
@@ -330,13 +646,16 @@ footer {
 
 .chart-container {
   margin-bottom: 16px;
+  width: 100%;
+  min-height: 250px;
 }
 
 /* Calibration Canvas Styling */
 #rssiChart,
 #rssiChart2 {
-  width: 100%;
-  height: 250px;
+  width: 100% !important;
+  height: 250px !important;
+  max-width: 100%;
   border: 1px solid var(--border-color);
   border-radius: 4px;
   background-color: #2a2a2a;
@@ -484,4 +803,41 @@ footer {
 
 .lap-times-table tr:hover {
   background-color: #e8f4f8;
+}
+
+/* Node 3 and 4 visibility - hidden by default, shown via JavaScript */
+.node-3,
+.node-4 {
+  display: none !important;
+}
+
+/* When nodes are visible, ensure they display properly */
+.node-3.visible,
+.node-4.visible {
+  display: table-cell !important;
+}
+
+/* For calib sections - block display */
+.calib-section.node-3.visible,
+.calib-section.node-4.visible {
+  display: block !important;
+}
+
+/* Config table layout */
+.node-config-table {
+  width: 100%;
+  table-layout: fixed; /* Equal column distribution */
+}
+
+/* Race table adjustments */
+.race-layout-table {
+  max-width: 1600px;
+  width: 100%;
+  table-layout: fixed; /* Equal column distribution */
+}
+
+/* Calibration sections - full width when visible */
+.calib-section {
+  width: 100%;
+  margin-bottom: 24px;
 }
